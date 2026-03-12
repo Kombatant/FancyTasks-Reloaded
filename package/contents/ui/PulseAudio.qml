@@ -6,20 +6,22 @@
 
 import QtQuick 2.15
 
-import org.kde.plasma.private.volume 0.1
+import org.kde.plasma.private.volume as PlasmaPa
 
 QtObject {
     id: pulseAudio
 
-    signal streamsChanged
+    signal streamsChanged()
+
+    readonly property QtObject globalConfig: PlasmaPa.GlobalConfig {}
 
     // It's a JS object so we can do key lookup and don't need to take care of filtering duplicates.
-    property var pidMatches: ({})
+    property var pidMatches: new Set()
 
     // TODO Evict cache at some point, preferably if all instances of an application closed.
     function registerPidMatch(appName) {
         if (!hasPidMatch(appName)) {
-            pidMatches[appName] = true;
+            pidMatches.add(appName);
 
             // In case this match is new, notify that streams might have changed.
             // This way we also catch the case when the non-playing instance
@@ -30,18 +32,28 @@ QtObject {
     }
 
     function hasPidMatch(appName) {
-        return pidMatches[appName] === true;
+        return pidMatches.has(appName);
     }
 
     function findStreams(key, value) {
+        return findStreamsFn(function(stream) {
+            return stream[key] === value;
+        });
+    }
+
+    function findStreamsFn(fn) {
         var streams = []
         for (var i = 0, length = instantiator.count; i < length; ++i) {
             var stream = instantiator.objectAt(i);
-            if (stream[key] === value) {
+            if (stream && fn(stream)) {
                 streams.push(stream);
             }
         }
         return streams
+    }
+
+    function streamsForAppId(appId) {
+        return findStreams("portalAppId", appId);
     }
 
     function streamsForAppName(appName) {
@@ -49,11 +61,17 @@ QtObject {
     }
 
     function streamsForPid(pid) {
-        var streams = findStreams("pid", pid);
+        // Skip streams that already expose a portal app id.
+        var streams = findStreamsFn(function(stream) {
+            return stream.pid === pid && !stream.portalAppId;
+        });
 
         if (streams.length === 0) {
             for (var i = 0, length = instantiator.count; i < length; ++i) {
                 var stream = instantiator.objectAt(i);
+                if (!stream) {
+                    continue;
+                }
 
                 if (stream.parentPid === -1) {
                     stream.parentPid = backend.parentPid(stream.pid);
@@ -70,18 +88,19 @@ QtObject {
 
     // QtObject has no default property, hence adding the Instantiator to one explicitly.
     property var instantiator: Instantiator {
-        model: PulseObjectFilterModel {
+        model: PlasmaPa.PulseObjectFilterModel {
             filters: [ { role: "VirtualStream", value: false } ]
-            sourceModel: SinkInputModel {}
+            sourceModel: PlasmaPa.SinkInputModel {}
         }
 
         delegate: QtObject {
             id: delegate
             required property var model
-            readonly property int pid: model.Client ? model.Client.properties["application.process.id"] : 0
+            readonly property int pid: model.Client?.properties["application.process.id"] ?? 0
             // Determined on demand.
             property int parentPid: -1
-            readonly property string appName: model.Client ? model.Client.properties["application.name"] : ""
+            readonly property string appName: model.Client?.properties["application.name"] ?? ""
+            readonly property string portalAppId: model.Client?.properties["pipewire.access.portal.app_id"] ?? ""
             readonly property bool muted: model.Muted
             // whether there is nothing actually going on on that stream
             readonly property bool corked: model.Corked
@@ -95,10 +114,14 @@ QtObject {
             }
         }
 
-        onObjectAdded: pulseAudio.streamsChanged()
-        onObjectRemoved: pulseAudio.streamsChanged()
+        onObjectAdded: function(index, object) {
+            pulseAudio.streamsChanged()
+        }
+        onObjectRemoved: function(index, object) {
+            pulseAudio.streamsChanged()
+        }
     }
 
-    readonly property int minimalVolume: PulseAudio.MinimalVolume
-    readonly property int normalVolume: PulseAudio.NormalVolume
+    readonly property int minimalVolume: PlasmaPa.PulseAudio.MinimalVolume
+    readonly property int normalVolume: PlasmaPa.PulseAudio.NormalVolume
 }

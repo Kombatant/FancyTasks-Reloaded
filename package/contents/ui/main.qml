@@ -241,7 +241,7 @@ PlasmoidItem {
     Loader {
         id: pulseAudio
         sourceComponent: pulseAudioComponent
-        active: pulseAudioComponent.status === Component.Ready
+        active: plasmoid.configuration.indicateAudioStreams && pulseAudioComponent.status === Component.Ready
     }
 
     Timer {

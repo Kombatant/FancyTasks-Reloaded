@@ -38,6 +38,7 @@ MouseArea {
     
     readonly property int pid: model.AppPid !== undefined ? model.AppPid : 0
     readonly property string appName: model.AppName || ""
+    readonly property string appId: model.AppId ? model.AppId.replace(/\.desktop$/, "") : ""
     readonly property variant winIdList: model.WinIdList
     property int itemIndex: index
     property bool inPopup: false
@@ -134,7 +135,7 @@ MouseArea {
         }
     }
 
-    onPressed: {
+    onPressed: function(mouse) {
         if (mouse.button == Qt.LeftButton || mouse.button == Qt.MidButton || mouse.button === Qt.BackButton || mouse.button === Qt.ForwardButton) {
             pressed = true;
             pressX = mouse.x;
@@ -150,7 +151,11 @@ MouseArea {
         }
     }
 
-    onPressAndHold: if (mouse.button === Qt.LeftButton) {
+    onPressAndHold: function(mouse) {
+        if (mouse.button !== Qt.LeftButton) {
+            return;
+        }
+
         /* TODO: make press and hold to open menu exclusive to touch.
          * I (ndavis) tried `if (lastDeviceType & ~(PointerDevice.Mouse | PointerDevice.TouchPad))`
          * with a TapHandler. lastDeviceType was gotten from the EventPoint argument of the
@@ -166,7 +171,7 @@ MouseArea {
         }
     }
 
-    onReleased: {
+    onReleased: function(mouse) {
         if (pressed) {
             if (mouse.button == Qt.MidButton) {
                 if (plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.NewInstance) {
@@ -207,7 +212,7 @@ MouseArea {
         pressY = -1;
     }
 
-    onPositionChanged: {
+    onPositionChanged: function(mouse) {
         // mouse.button is always 0 here, hence checking with mouse.buttons
         if (pressX != -1 && mouse.buttons == Qt.LeftButton && dragHelper.isDrag(pressX, pressY, mouse.x, mouse.y)) {
             tasks.dragSource = task;
@@ -220,7 +225,7 @@ MouseArea {
         }
     }
 
-    onWheel: {
+    onWheel: function(wheel) {
         if (plasmoid.configuration.wheelEnabled && (!inPopup || !groupDialog.overflowing)) {
             wheelDelta = TaskTools.wheelActivateNextPrevTask(task, wheelDelta, wheel.angleDelta.y);
         } else {
@@ -248,6 +253,12 @@ MouseArea {
 
     onAudioIndicatorsEnabledChanged: {
         audioStreamIconLoader.active = hasAudioStream && audioIndicatorsEnabled;
+
+        if (audioIndicatorsEnabled) {
+            updateAudioStreams({delay: false});
+        } else {
+            task.audioStreams = [];
+        }
     }
 
     function hexToHSL(hex) {
@@ -277,9 +288,15 @@ MouseArea {
     return HSL;
     }
 
-    Keys.onReturnPressed: TaskTools.activateTask(modelIndex(), model, event.modifiers, task)
-    Keys.onEnterPressed: Keys.onReturnPressed(event);
-    Keys.onSpacePressed: Keys.onReturnPressed(event);
+    Keys.onReturnPressed: function(event) {
+        TaskTools.activateTask(modelIndex(), model, event.modifiers, task)
+    }
+    Keys.onEnterPressed: function(event) {
+        Keys.onReturnPressed(event);
+    }
+    Keys.onSpacePressed: function(event) {
+        Keys.onReturnPressed(event);
+    }
 
     function modelIndex() {
         return (inPopup ? tasksModel.makeModelIndex(groupDialog.visualParent.itemIndex, index)
@@ -308,16 +325,19 @@ MouseArea {
             return;
         }
 
-        var streams = pa.streamsForPid(task.pid);
-        if (streams.length) {
-            pa.registerPidMatch(task.appName);
-        } else {
-            // We only want to fall back to appName matching if we never managed to map
-            // a PID to an audio stream window. Otherwise if you have two instances of
-            // an application, one playing and the other not, it will look up appName
-            // for the non-playing instance and erroneously show an indicator on both.
-            if (!pa.hasPidMatch(task.appName)) {
-                streams = pa.streamsForAppName(task.appName);
+        var streams = pa.streamsForAppId(task.appId);
+        if (!streams.length) {
+            streams = pa.streamsForPid(task.pid);
+            if (streams.length) {
+                pa.registerPidMatch(task.appName);
+            } else {
+                // We only want to fall back to appName matching if we never managed to map
+                // a PID to an audio stream window. Otherwise if you have two instances of
+                // an application, one playing and the other not, it will look up appName
+                // for the non-playing instance and erroneously show an indicator on both.
+                if (!pa.hasPidMatch(task.appName)) {
+                    streams = pa.streamsForAppName(task.appName);
+                }
             }
         }
 
@@ -648,7 +668,7 @@ MouseArea {
         mainItem: (model.IsWindow === true) ? openWindowToolTipDelegate : pinnedAppToolTipDelegate
 
         onToolTipVisibleChanged: {
-            if (!toolTipVisible) {
+            if (!toolTipArea.toolTipVisible) {
                 tasks.toolTipOpenedByClick = null;
             }
         }
