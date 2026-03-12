@@ -49,6 +49,7 @@ MouseArea {
     property bool pressed: false
     property int pressX: -1
     property int pressY: -1
+    property bool dragging: false
     property QtObject contextMenu: null
     property int wheelDelta: 0
     readonly property bool smartLauncherEnabled: !inPopup && model.IsStartup !== true
@@ -164,6 +165,15 @@ MouseArea {
     }
 
     onReleased: function(mouse) {
+        if (dragging) {
+            dragging = false;
+            tasks.dragSource = null;
+            pressed = false;
+            pressX = -1;
+            pressY = -1;
+            return;
+        }
+
         if (pressed) {
             if (mouse.button == Qt.MidButton) {
                 if (plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.NewInstance) {
@@ -206,14 +216,44 @@ MouseArea {
 
     onPositionChanged: function(mouse) {
         // mouse.button is always 0 here, hence checking with mouse.buttons
-        if (pressX != -1 && mouse.buttons == Qt.LeftButton && dragHelper.isDrag(pressX, pressY, mouse.x, mouse.y)) {
+        if (!dragging && pressX != -1 && mouse.buttons == Qt.LeftButton
+                && dragHelper.isDrag(pressX, pressY, mouse.x, mouse.y)) {
+            dragging = true;
             tasks.dragSource = task;
-            dragHelper.startDrag(task, model.MimeType, model.MimeData,
-                model.LauncherUrlWithoutIcon, model.decoration);
-            pressX = -1;
-            pressY = -1;
+        }
 
-            return;
+        if (dragging) {
+            if (taskList.animating) {
+                return;
+            }
+
+            var taskListPos = mapToItem(taskList, mouse.x, mouse.y);
+            var above = taskList.childAt(taskListPos.x, taskListPos.y);
+
+            if (!above || above === task) {
+                return;
+            }
+
+            // Prevent oscillation when dragging a small launcher over a larger task
+            if (!plasmoid.configuration.separateLaunchers
+                    && task.m.IsLauncher === true && above.m.IsLauncher !== true
+                    && above === tasks.dragIgnoredItem) {
+                return;
+            } else {
+                tasks.dragIgnoredItem = null;
+            }
+
+            if (plasmoid.configuration.sortingStrategy === 1
+                    && above.itemIndex !== undefined) {
+                var insertAt = TaskTools.insertIndexAt(above, taskListPos.x, taskListPos.y);
+
+                if (task.itemIndex !== insertAt) {
+                    tasksModel.move(task.itemIndex, insertAt);
+
+                    tasks.dragIgnoredItem = above;
+                    tasks.dragIgnoreTimer.restart();
+                }
+            }
         }
     }
 

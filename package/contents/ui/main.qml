@@ -77,6 +77,15 @@ PlasmoidItem {
 //END TODO
 
     property Item dragSource: null
+    property Item dragIgnoredItem: null
+
+    readonly property alias dragIgnoreTimer: _dragIgnoreTimer
+    Timer {
+        id: _dragIgnoreTimer
+        repeat: false
+        interval: 750
+        onTriggered: tasks.dragIgnoredItem = null
+    }
 
     signal requestLayout
     signal windowsHovered(variant winIds, bool hovered)
@@ -101,6 +110,8 @@ PlasmoidItem {
     onDragSourceChanged: {
         if (dragSource == null) {
             tasksModel.syncLaunchers();
+            dragIgnoredItem = null;
+            _dragIgnoreTimer.stop();
         }
     }
 
