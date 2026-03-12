@@ -17,34 +17,15 @@ import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 
 RowLayout {
-    enabled: !!playerData.CanControl
+    readonly property var player: mpris2Source.playerForLauncherUrl(launcherUrl, appPid)
+    enabled: !!player && player.canControl
 
-    readonly property string mprisSourceName: mpris2Source.sourceNameForLauncherUrl(launcherUrl, appPid)
-    readonly property var playerData: mprisSourceName != "" ? mpris2Source.data[mprisSourceName] : 0
-    readonly property bool playing: !!(playerData.PlaybackStatus === "Playing")
+    readonly property bool playing: mpris2Source.isPlaying(player)
     property string parentTitle
 
-    property var currentMetadata: !!playerData ? playerData.Metadata : ""
-
-    readonly property string track: {
-        const xesamTitle = currentMetadata["xesam:title"]
-        if (xesamTitle) {
-            return xesamTitle;
-        }
-        // if no track title is given, print out the file name
-        const xesamUrl = currentMetadata["xesam:url"] ? currentMetadata["xesam:url"].toString() : ""
-        if (!xesamUrl) {
-            return "";
-        }
-        const lastSlashPos = xesamUrl.lastIndexOf('/')
-        if (lastSlashPos < 0) {
-            return "";
-        }
-        const lastUrlPart = xesamUrl.substring(lastSlashPos + 1)
-        return decodeURIComponent(lastUrlPart) || "";
-    }
-    readonly property string artist: currentMetadata["xesam:artist"] || ""
-    readonly property string albumArt: currentMetadata["mpris:artUrl"] || ""
+    readonly property string track: player ? player.track : ""
+    readonly property string artist: player ? player.artist : ""
+    readonly property string albumArt: player ? player.artUrl : ""
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -99,26 +80,26 @@ RowLayout {
     }
 
     PlasmaComponents3.ToolButton {
-        enabled: !!playerData.CanGoPrevious
+        enabled: !!player && player.canGoPrevious
         icon.name: LayoutMirroring.enabled ? "media-skip-forward" : "media-skip-backward"
-        onClicked: mpris2Source.goPrevious(mprisSourceName)
+        onClicked: mpris2Source.goPrevious(player)
     }
 
     PlasmaComponents3.ToolButton {
-        enabled: playing ? !!playerData.CanPause : !!playerData.CanPlay
+        enabled: !!player && (playing ? player.canPause : player.canPlay)
         icon.name: playing ? "media-playback-pause" : "media-playback-start"
         onClicked: {
             if (!playing) {
-                mpris2Source.play(mprisSourceName);
+                mpris2Source.play(player);
             } else {
-                mpris2Source.pause(mprisSourceName);
+                mpris2Source.pause(player);
             }
         }
     }
 
     PlasmaComponents3.ToolButton {
-        enabled: !!playerData.CanGoNext
+        enabled: !!player && player.canGoNext
         icon.name: LayoutMirroring.enabled ? "media-skip-backward" : "media-skip-forward"
-        onClicked: mpris2Source.goNext(mprisSourceName)
+        onClicked: mpris2Source.goNext(player)
     }
 }

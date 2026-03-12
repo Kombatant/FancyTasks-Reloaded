@@ -158,21 +158,18 @@ PlasmaExtras.Menu {
         });
 
         // Add Media Player control actions
-        var sourceName = mpris2Source.sourceNameForLauncherUrl(launcherUrl, get(atm.AppPid));
+        var player = mpris2Source.playerForLauncherUrl(launcherUrl, get(atm.AppPid));
 
-        if (sourceName && !(get(atm.WinIdList) !== undefined && get(atm.WinIdList).length > 1)) {
-            var playerData = mpris2Source.data[sourceName]
-
-            if (playerData.CanControl) {
-                var playing = (playerData.PlaybackStatus === "Playing");
+        if (player && !(get(atm.WinIdList) !== undefined && get(atm.WinIdList).length > 1)) {
+            if (player.canControl) {
                 var menuItem = menu.newMenuItem(menu);
                 menuItem.text = i18nc("Play previous track", "Previous Track");
                 menuItem.icon = "media-skip-backward";
                 menuItem.enabled = Qt.binding(function() {
-                    return playerData.CanGoPrevious;
+                    return player.canGoPrevious;
                 });
                 menuItem.clicked.connect(function() {
-                    mpris2Source.goPrevious(sourceName);
+                    mpris2Source.goPrevious(player);
                 });
                 menu.addMenuItem(menuItem, startNewInstanceItem);
 
@@ -180,19 +177,19 @@ PlasmaExtras.Menu {
                 // PlasmaCore Menu doesn't actually handle icons or labels changing at runtime...
                 menuItem.text = Qt.binding(function() {
                     // if CanPause, toggle the menu entry between Play & Pause, otherwise always use Play
-                    return playing && playerData.CanPause ? i18nc("Pause playback", "Pause") : i18nc("Start playback", "Play");
+                    return mpris2Source.isPlaying(player) && player.canPause ? i18nc("Pause playback", "Pause") : i18nc("Start playback", "Play");
                 });
                 menuItem.icon = Qt.binding(function() {
-                    return playing && playerData.CanPause ? "media-playback-pause" : "media-playback-start";
+                    return mpris2Source.isPlaying(player) && player.canPause ? "media-playback-pause" : "media-playback-start";
                 });
                 menuItem.enabled = Qt.binding(function() {
-                    return playing ? playerData.CanPause : playerData.CanPlay;
+                    return mpris2Source.isPlaying(player) ? player.canPause : player.canPlay;
                 });
                 menuItem.clicked.connect(function() {
-                    if (playing) {
-                        mpris2Source.pause(sourceName);
+                    if (mpris2Source.isPlaying(player)) {
+                        mpris2Source.pause(player);
                     } else {
-                        mpris2Source.play(sourceName);
+                        mpris2Source.play(player);
                     }
                 });
                 menu.addMenuItem(menuItem, startNewInstanceItem);
@@ -201,10 +198,10 @@ PlasmaExtras.Menu {
                 menuItem.text = i18nc("Play next track", "Next Track");
                 menuItem.icon = "media-skip-forward";
                 menuItem.enabled = Qt.binding(function() {
-                    return playerData.CanGoNext;
+                    return player.canGoNext;
                 });
                 menuItem.clicked.connect(function() {
-                    mpris2Source.goNext(sourceName);
+                    mpris2Source.goNext(player);
                 });
                 menu.addMenuItem(menuItem, startNewInstanceItem);
 
@@ -212,10 +209,10 @@ PlasmaExtras.Menu {
                 menuItem.text = i18nc("Stop playback", "Stop");
                 menuItem.icon = "media-playback-stop";
                 menuItem.enabled = Qt.binding(function() {
-                    return playerData.PlaybackStatus !== "Stopped";
+                    return !mpris2Source.isStopped(player);
                 });
                 menuItem.clicked.connect(function() {
-                    mpris2Source.stop(sourceName);
+                    mpris2Source.stop(player);
                 });
                 menu.addMenuItem(menuItem, startNewInstanceItem);
 
@@ -227,7 +224,7 @@ PlasmaExtras.Menu {
 
                 // If we don't have a window associated with the player but we can quit
                 // it through MPRIS we'll offer a "Quit" option instead of "Close"
-                if (!closeWindowItem.visible && playerData.CanQuit) {
+                if (!closeWindowItem.visible && player.canQuit) {
                     menuItem = menu.newMenuItem(menu);
                     menuItem.text = i18nc("Quit media player app", "Quit");
                     menuItem.icon = "application-exit";
@@ -235,22 +232,22 @@ PlasmaExtras.Menu {
                         return !closeWindowItem.visible;
                     });
                     menuItem.clicked.connect(function() {
-                        mpris2Source.quit(sourceName);
+                        mpris2Source.quit(player);
                     });
                     menu.addMenuItem(menuItem);
                 }
 
                 // If we don't have a window associated with the player but we can raise
                 // it through MPRIS we'll offer a "Restore" option
-                if (get(atm.IsLauncher) === true && !startNewInstanceItem.visible && playerData.CanRaise) {
+                if (get(atm.IsLauncher) === true && !startNewInstanceItem.visible && player.canRaise) {
                     menuItem = menu.newMenuItem(menu);
                     menuItem.text = i18nc("Open or bring to the front window of media player app", "Restore");
-                    menuItem.icon = playerData["Desktop Icon Name"];
+                    menuItem.icon = mpris2Source.playerIconName(player, launcherUrl);
                     menuItem.visible = Qt.binding(function() {
                         return !startNewInstanceItem.visible;
                     });
                     menuItem.clicked.connect(function() {
-                        mpris2Source.raise(sourceName);
+                        mpris2Source.raise(player);
                     });
                     menu.addMenuItem(menuItem, startNewInstanceItem);
                 }

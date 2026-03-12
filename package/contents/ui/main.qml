@@ -11,7 +11,6 @@ import QtQml 2.15
 import org.kde.kirigami 2.20 as Kirigami
 import org.kde.ksvg as KSvg
 import org.kde.plasma.plasmoid 2.0
-import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.core as PlasmaCore
 
 import org.kde.taskmanager 0.1 as TaskManager
@@ -39,6 +38,7 @@ PlasmoidItem {
 
     property QtObject contextMenuComponent: Qt.createComponent("ContextMenu.qml")
     property QtObject pulseAudioComponent: Qt.createComponent("PulseAudio.qml")
+    property QtObject mprisSourceComponent: Qt.createComponent("MprisSource.qml")
 
     property bool needLayoutRefresh: false;
     property variant taskClosedWithMouseMiddleButton: []
@@ -226,103 +226,17 @@ PlasmoidItem {
         }
     }
 
-    Plasma5Support.DataSource {
-        id: mpris2Source
-        engine: "mpris2"
-        interval: 500 // update every half second
-        connectedSources: sources
-        onSourceAdded: {
-            connectSource(source);
-        }
-        onSourceRemoved: {
-            disconnectSource(source);
-        }
-        function sourceNameForLauncherUrl(launcherUrl, pid) {
-            if (!launcherUrl || launcherUrl === "") {
-                return "";
-            }
-
-            // MPRIS spec explicitly mentions that "DesktopEntry" is with .desktop extension trimmed
-            // Moreover, remove URL parameters, like wmClass (part after the question mark)
-            var desktopFileName = launcherUrl.toString().split('/').pop().split('?')[0].replace(".desktop", "")
-            if (desktopFileName.indexOf("applications:") === 0) {
-                desktopFileName = desktopFileName.substr(13)
-            }
-
-            let fallbackSource = "";
-
-            for (var i = 0, length = connectedSources.length; i < length; ++i) {
-                var source = connectedSources[i];
-                // we intend to connect directly, otherwise the multiplexer steals the connection away
-                if (source === "@multiplex") {
-                    continue;
-                }
-                var sourceData
-                var browserIntegrationArray = ["firefox", "chrome", "chromium", "vivaldi", "brave", "opera", "microsoft-edge"]
-                if(browserIntegrationArray.findIndex(browser => browser.includes(desktopFileName)) !== -1){//Hack to replace any plasma browser integration compatible browser
-                    for (var x = 0, length = connectedSources.length; x < length; ++x) {
-                        sourceData = data[connectedSources[x]]
-                        if(connectedSources[x] === "plasma-browser-integration" && (sourceData.Metadata["kde:pid"] == pid || sourceData.DesktopEntry == desktopFileName)){ //Sanity check to ensure we can replace it
-                            return connectedSources[x]
-                        }
-                    }
-                }
-                sourceData = data[source];
-                /**
-                 * If the task is in a group, we can't use desktopFileName to match the task.
-                 * but in case PID match fails, use the match result from desktopFileName.
-                 */
-                if (pid && sourceData.InstancePid === pid) {
-                    return source;
-                }
-                if (sourceData.DesktopEntry === desktopFileName) {
-                    fallbackSource = source;
-                }
-
-                var metadata = sourceData.Metadata;
-                if (metadata) {
-                    var kdePid = metadata["kde:pid"];
-                    if (kdePid && pid === kdePid) {
-                        return source;
-                    }
-                }
-            }
-
-            // If PID match fails, return fallbackSource.
-            return fallbackSource;
-        }
-
-        function startOperation(source, op) {
-            var service = serviceForSource(source)
-            var operation = service.operationDescription(op)
-            return service.startOperationCall(operation)
-        }
-
-        function goPrevious(source) {
-            startOperation(source, "Previous");
-        }
-        function goNext(source) {
-            startOperation(source, "Next");
-        }
-        function play(source) {
-            startOperation(source, "Play");
-        }
-        function pause(source) {
-            startOperation(source, "Pause");
-        }
-        function playPause(source) {
-            startOperation(source, "PlayPause");
-        }
-        function stop(source) {
-            startOperation(source, "Stop");
-        }
-        function raise(source) {
-            startOperation(source, "Raise");
-        }
-        function quit(source) {
-            startOperation(source, "Quit");
-        }
+    MprisUnavailable {
+        id: mprisUnavailable
     }
+
+    Loader {
+        id: mprisSourceLoader
+        active: true
+        source: mprisSourceComponent.status === Component.Ready ? "MprisSource.qml" : "MprisUnavailable.qml"
+    }
+
+    readonly property QtObject mpris2Source: mprisSourceLoader.item ? mprisSourceLoader.item : mprisUnavailable
 
     Loader {
         id: pulseAudio
