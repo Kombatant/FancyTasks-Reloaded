@@ -6,9 +6,9 @@
 
 import QtQuick 2.15
 
-import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami 2.20 as Kirigami
-import QtGraphicalEffects 1.15
+import Qt5Compat.GraphicalEffects
 
 MouseArea {
     property string dominantIconColor

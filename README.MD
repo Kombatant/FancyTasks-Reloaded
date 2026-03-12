@@ -1,7 +1,6 @@
 # Notice
-Development of this project has more or less resumed. Help is always wanted and appreciated, however.  
-I'm struggling with burn out at the moment. I'm hoping to return to the project soon but I need to get that under control.  
-Currently I'm almost done with the overhauls of indicators which should finalize the Plasma 5 version of this plasmoid. Once that is completed, Plasma 5 will be split into its own fork and the main branch will be for Plasma 6. Any new features and code improvements the plasma 6 widget offers will be back ported in. I'm also in the process of modularizing the FancyTasks additions in order to make development simpler. 
+This branch now targets KDE Plasma 6 and has been updated for KDE 6.6-era Plasma/Qt 6 APIs. Plasma 5 is no longer the active target for this codebase. Help is always wanted and appreciated.  
+I'm still working on the project in limited time, so fixes and reviews may take a while. 
 
 # Contact
 You can reach me at ideas@alexankitty.com, by putting an issue on this github, by commenting on the [AUR package](https://aur.archlinux.org/packages/fancytasks), by commenting on the kde-look page, or on the [FancyTasks KDE Reddit community](https://www.reddit.com/r/fancytaskskde/).
@@ -13,6 +12,8 @@ You can reach me at ideas@alexankitty.com, by putting an issue on this github, b
 ## Installing
 
 If your distro does not include kirigami2, install it now. It's required for the settings, and used for the dominant icon color effect. Python3 is required for installing.
+
+Fancy Tasks now targets Plasma 6.6 and newer. Make sure the Plasma 6 task manager and Plasma workspace packages are installed so the task manager QML modules are available.
 
 1. Clone this repository with the following command `git clone https://github.com/alexankitty/FancyTasks`
 2. CD into the folder and run the script `install.sh`, you may need to chmod +x or prepend your shell before the script in order to run it
@@ -42,7 +43,7 @@ Features improvements tweaks and options to the original task manager plasmoid m
 
 
 ## Known Issues
-* Does not support LTS currently! (fix me pls)
+* Plasma private task manager and audio stream APIs are still used in a few places, so compatibility depends on the matching Plasma 6 desktop packages being present.
 
 ## To Do
 * Fix LTS support

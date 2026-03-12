@@ -7,7 +7,7 @@
 
 .import QtQml 2.15 as QtQml
 .import org.kde.taskmanager 0.1 as TaskManager
-.import org.kde.plasma.core 2.0 as PlasmaCore // Needed by TaskManager
+.import org.kde.plasma.core as PlasmaCore // Needed by TaskManager
 
 function wheelActivateNextPrevTask(anchor, wheelDelta, eventDelta) {
     // magic number 120 for common "one click"

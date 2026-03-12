@@ -171,7 +171,7 @@
         "ServiceTypes": [
             "Plasma/Applet"
         ],
-        "Version": "4.0",
+        "Version": "4.1",
         "Website": "https://github.com/alexankitty/FancyTasks"
     },
     "X-Plasma-API": "declarativeappletscript",

@@ -11,7 +11,7 @@ import QtQml 2.15
 import QtQml.Models 2.15
 import QtQuick.Window 2.15
 
-import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.draganddrop 2.0
 
@@ -74,7 +74,7 @@ PlasmaCore.Dialog {
                                                 + 2 * (LayoutManager.labelMargin + LayoutManager.iconMargin)
                                                 + scrollView.leftPadding + scrollView.rightPadding
                 // Use groupFilter.count because sometimes count is not updated in time (BUG 446105)
-                readonly property int maxHeight: groupFilter.count * (LayoutManager.verticalMargins() + Math.max(theme.mSize(theme.defaultFont).height, PlasmaCore.Units.iconSizes.medium))
+                readonly property int maxHeight: groupFilter.count * (LayoutManager.verticalMargins() + Math.max(tasks.defaultFontHeight, PlasmaCore.Units.iconSizes.medium))
 
                 model: DelegateModel {
                     id: groupFilter

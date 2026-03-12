@@ -4,7 +4,7 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-.import org.kde.plasma.core 2.0 as PlasmaCore
+.import org.kde.plasma.core as PlasmaCore
 .import org.kde.kirigami 2.19 as Kirigami
 
 const iconMargin = Math.round(PlasmaCore.Units.smallSpacing / 4);
@@ -106,7 +106,7 @@ function preferredMinWidth() {
     if (!tasks.vertical && !tasks.iconsOnly) {
       width +=
           (PlasmaCore.Units.smallSpacing * 2) +
-          (plasmoid.configuration.maxButtonLength /*PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).width * 12*/);
+                    plasmoid.configuration.maxButtonLength;
     }
 
     return width;
@@ -130,7 +130,7 @@ function preferredMaxWidth() {
 
 function preferredMinHeight() {
     // TODO FIXME UPSTREAM: Port to proper font metrics for descenders once we have access to them.
-    return PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).height + 4;
+    return tasks.defaultFontHeight + 4;
 }
 
 function preferredMaxHeight() {
@@ -142,7 +142,7 @@ function preferredMaxHeight() {
                  tasks.width,
                  tasks.iconsOnly ? tasks.width :
                     Math.max(
-                        PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).height,
+                        tasks.defaultFontHeight,
                         PlasmaCore.Units.iconSizes.medium
                     )
              );
@@ -150,8 +150,7 @@ function preferredMaxHeight() {
       return verticalMargins() +
              Math.min(
                  PlasmaCore.Units.iconSizes.small * 3,
-                 PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).height *
-                     3);
+                 tasks.defaultFontHeight * 3);
     }
 }
 
@@ -193,7 +192,7 @@ function launcherWidth() {
 }
 
 function maximumContextMenuTextWidth() {
-  return (PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).width * 28);
+    return tasks.defaultFontWidth * 28;
 }
 
 function layout(container) {

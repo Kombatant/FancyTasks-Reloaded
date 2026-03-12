@@ -6,9 +6,9 @@
 
 import QtQuick 2.15
 
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents // for DialogStatus
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
+import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.draganddrop 2.0
 import org.kde.kirigami 2.20 as Kirigami
 
@@ -16,7 +16,7 @@ import org.kde.plasma.private.taskmanager 0.1 as TaskManagerApplet
 
 import QtQuick.Layouts 1.3
 
-import QtGraphicalEffects 1.15
+import Qt5Compat.GraphicalEffects
 
 import "code/layout.js" as LayoutManager
 import "code/tools.js" as TaskTools
@@ -26,7 +26,7 @@ MouseArea {
 
     activeFocusOnTab: true
 
-    height: Math.max(theme.mSize(theme.defaultFont).height, PlasmaCore.Units.iconSizes.medium) + LayoutManager.verticalMargins()
+    height: Math.max(tasks.defaultFontHeight, PlasmaCore.Units.iconSizes.medium) + LayoutManager.verticalMargins()
 
     visible: false
 
@@ -71,7 +71,7 @@ MouseArea {
     })
 
     readonly property bool highlighted: (inPopup && activeFocus) || (!inPopup && containsMouse)
-        || (task.contextMenu && task.contextMenu.status === PlasmaComponents.DialogStatus.Open)
+        || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
         || (!!tasks.groupDialog && tasks.groupDialog.visualParent === task)
 
     property string tintColor: Kirigami.ColorUtils.brightnessForColor(PlasmaCore.Theme.backgroundColor) ===
@@ -832,7 +832,7 @@ MouseArea {
         id: label
 
         visible: (inPopup || !iconsOnly && model.IsLauncher !== true
-            && (parent.width - iconBox.height - PlasmaCore.Units.smallSpacing) >= (theme.mSize(theme.defaultFont).width * LayoutManager.minimumMColumns()))
+            && (parent.width - iconBox.height - PlasmaCore.Units.smallSpacing) >= (tasks.defaultFontWidth * LayoutManager.minimumMColumns()))
 
         anchors {
             fill: parent

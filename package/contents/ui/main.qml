@@ -9,7 +9,7 @@ import QtQuick.Layouts 1.15
 import QtQml 2.15
 
 import org.kde.plasma.plasmoid 2.0
-import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.core as PlasmaCore
 
 import org.kde.taskmanager 0.1 as TaskManager
 import org.kde.plasma.private.taskmanager 0.1 as TaskManagerApplet
@@ -26,6 +26,8 @@ MouseArea {
 
     property bool vertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
     property bool iconsOnly: plasmoid.configuration.iconOnly
+    property int defaultFontWidth: Math.max(1, Math.ceil(defaultFontMetrics.advanceWidth))
+    property int defaultFontHeight: Math.max(1, Math.ceil(defaultFontMetrics.height))
 
     property var toolTipOpenedByClick: null
 
@@ -34,6 +36,12 @@ MouseArea {
 
     property bool needLayoutRefresh: false;
     property variant taskClosedWithMouseMiddleButton: []
+
+    TextMetrics {
+        id: defaultFontMetrics
+        font: PlasmaCore.Theme.defaultFont
+        text: "m"
+    }
 
     Plasmoid.preferredRepresentation: Plasmoid.fullRepresentation
 
