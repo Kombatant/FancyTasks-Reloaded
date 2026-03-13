@@ -948,23 +948,26 @@ MouseArea {
                 property bool isMinimized: false
             }
 
-            Rectangle {
+            Item {
                 id: previewBadge
                 visible: minimizedPreview.showPreview
                 z: 1
+                width: 0
+                height: 0
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom 
-                anchors.bottomMargin: badgePadding 
-                width: previewBadgeIcon.width + (badgePadding * 2)
-                height: previewBadgeIcon.height + (badgePadding * 2)
-                radius: height / 2
-                color: Kirigami.Theme.backgroundColor
-                border.width: 1
-                border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                                      Kirigami.Theme.textColor.g,
-                                      Kirigami.Theme.textColor.b,
-                                      0.18)
-                opacity: 0.94
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: {
+                    // Force re-evaluation when these change
+                    var indVisible = indicator.visible
+                    var indState = indicator.state
+                    var indEnabled = plasmoid.configuration.indicatorsEnabled
+                    if (indEnabled && indVisible && indState === "bottom") {
+                        var previewBottomInTask = iconBox.y + minimizedPreview.y + minimizedPreview.height
+                        var margin = previewBottomInTask + minimizedPreview.badgeSize / 2 - indicator.y + 1
+                        return Math.max(0, Math.ceil(margin))
+                    }
+                    return 0
+                }
 
                 Kirigami.Icon {
                     id: previewBadgeIcon
