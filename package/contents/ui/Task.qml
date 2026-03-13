@@ -868,6 +868,8 @@ MouseArea {
                                                 && model.IsMinimized === true
                                                 && (isX11 || isWayland)
             readonly property bool refreshingCache: refreshTimer.running
+            readonly property real badgeSize: Math.min(Math.min(width, height) * 0.36, Kirigami.Units.iconSizes.smallMedium)
+            readonly property real badgePadding: Math.max(2, Math.round(badgeSize * 0.16))
             property double lastHeartbeat: 0
 
             function requestCacheRefresh() {
@@ -938,6 +940,33 @@ MouseArea {
                 // Expose context for TaskPipeWirePreview.qml
                 property string windowUuid: minimizedPreview.resolvedWinUuid
                 property bool isMinimized: model.IsMinimized === true && !minimizedPreview.refreshingCache
+            }
+
+            Rectangle {
+                id: previewBadge
+                visible: minimizedPreview.showPreview
+                z: 1
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom 
+                anchors.bottomMargin: badgePadding 
+                width: previewBadgeIcon.width + (badgePadding * 2)
+                height: previewBadgeIcon.height + (badgePadding * 2)
+                radius: height / 2
+                color: Kirigami.Theme.backgroundColor
+                border.width: 1
+                border.color: Qt.rgba(Kirigami.Theme.textColor.r,
+                                      Kirigami.Theme.textColor.g,
+                                      Kirigami.Theme.textColor.b,
+                                      0.18)
+                opacity: 0.94
+
+                Kirigami.Icon {
+                    id: previewBadgeIcon
+                    anchors.centerIn: parent
+                    width: minimizedPreview.badgeSize
+                    height: width
+                    source: model.decoration
+                }
             }
         }
 
