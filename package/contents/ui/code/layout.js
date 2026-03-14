@@ -19,13 +19,13 @@ function refreshConstants() {
 
 function horizontalMargins() {
     refreshConstants();
-    const spacingAdjustment = (plasmoid.configuration.iconOnly) ? (Kirigami.Settings.tabletMode ? 3 : plasmoid.configuration.iconSpacing) : 1
+    const spacingAdjustment = Kirigami.Settings.tabletMode ? 3 : plasmoid.configuration.iconSpacing;
     return (taskFrame.margins.left + taskFrame.margins.right) * spacingAdjustment;
 }
 
 function verticalMargins() {
     refreshConstants();
-    const spacingAdjustment = (plasmoid.configuration.iconOnly) ? (Kirigami.Settings.tabletMode ? 3 : plasmoid.configuration.iconSpacing) : 1
+    const spacingAdjustment = Kirigami.Settings.tabletMode ? 3 : plasmoid.configuration.iconSpacing;
     return (taskFrame.margins.top + taskFrame.margins.bottom) * spacingAdjustment;
 }
 
@@ -196,6 +196,10 @@ function taskHeight() {
 function launcherWidth() {
     var baseWidth = tasks.vertical ? preferredMinHeight() : Math.min(tasks.height, tasks.iconSizeSmall * 3);
 
+    if (!tasks.iconsOnly) {
+        baseWidth = Math.max(baseWidth, tasks.height);
+    }
+
     return (baseWidth + horizontalMargins())
         - (adjustMargin(baseWidth, taskFrame.margins.top) + adjustMargin(baseWidth, taskFrame.margins.bottom));
 }
@@ -229,9 +233,9 @@ function layout(container) {
 
         adjustedWidth = width;
 
-        if (!tasks.vertical && !tasks.iconsOnly && (plasmoid.configuration.separateLaunchers || stripes == 1)) {
+        if (!tasks.vertical && !tasks.iconsOnly && (tasks.effectiveSeparateLaunchers || stripes == 1)) {
             if (item.m.IsLauncher === true
-                || (!plasmoid.configuration.separateLaunchers && item.m.IsStartup === true && item.m.HasLauncher === true)) {
+                || (!tasks.effectiveSeparateLaunchers && item.m.IsStartup === true && item.m.HasLauncher === true)) {
                 adjustedWidth = launcherWidth();
             } else if (stripes > 1 && i == tasksModel.logicalLauncherCount) {
                 adjustedWidth += launcherLayoutWidthDiff();

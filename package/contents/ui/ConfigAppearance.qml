@@ -256,7 +256,6 @@ Kirigami.FormLayout {
     }
 
     ComboBox {
-        visible: iconOnly
         Kirigami.FormData.label: i18n("Spacing between icons:")
 
         model: [

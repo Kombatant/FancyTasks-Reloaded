@@ -90,7 +90,7 @@ Item {
             // by tracking the cursor movement vector and allowing the drag if
             // the movement direction has reversed, establishing user intent to
             // move back.
-            if (!plasmoid.configuration.separateLaunchers && tasks.dragSource != null
+            if (!tasks.effectiveSeparateLaunchers && tasks.dragSource != null
                  && tasks.dragSource.m.IsLauncher === true && above.m.IsLauncher !== true
                  && above === ignoredItem) {
                 return;

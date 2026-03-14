@@ -29,6 +29,8 @@ PlasmoidItem {
 
     property bool vertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
     property bool iconsOnly: plasmoid.configuration.iconOnly
+    readonly property bool manualSorting: plasmoid.configuration.sortingStrategy === 1
+    readonly property bool effectiveSeparateLaunchers: !manualSorting || iconsOnly || plasmoid.configuration.separateLaunchers
     property bool containsMouse: mouseTracker.containsMouse
     property int smallSpacing: Kirigami.Units.smallSpacing
     property int iconSizeSmall: Kirigami.Units.iconSizes.small
@@ -128,7 +130,7 @@ PlasmoidItem {
         id: tasksModel
 
         readonly property int logicalLauncherCount: {
-            if (plasmoid.configuration.separateLaunchers) {
+            if (tasks.effectiveSeparateLaunchers) {
                 return launcherCount;
             }
 
@@ -155,15 +157,8 @@ PlasmoidItem {
         filterNotMinimized: plasmoid.configuration.showOnlyMinimized
 
         sortMode: sortModeEnumValue(plasmoid.configuration.sortingStrategy)
-        launchInPlace: iconsOnly && plasmoid.configuration.sortingStrategy === 1
-        separateLaunchers: {
-            if (!iconsOnly && !plasmoid.configuration.separateLaunchers
-                && plasmoid.configuration.sortingStrategy === 1) {
-                return false;
-            }
-
-            return true;
-        }
+        launchInPlace: tasks.manualSorting
+        separateLaunchers: tasks.effectiveSeparateLaunchers
 
         groupMode: groupModeEnumValue(plasmoid.configuration.groupingStrategy)
         groupInline: !plasmoid.configuration.groupPopups

@@ -139,7 +139,7 @@ MouseArea {
         hideToolTipTemporarily();
 
         if (!inPopup && !tasks.vertical
-            && (LayoutManager.calculateStripes() > 1 || !plasmoid.configuration.separateLaunchers)) {
+            && (LayoutManager.calculateStripes() > 1 || !tasks.effectiveSeparateLaunchers)) {
             tasks.requestLayout();
         }
     }
@@ -254,7 +254,7 @@ MouseArea {
             }
 
             // Prevent oscillation when dragging a small launcher over a larger task
-            if (!plasmoid.configuration.separateLaunchers
+            if (!tasks.effectiveSeparateLaunchers
                     && task.m.IsLauncher === true && above.m.IsLauncher !== true
                     && above === tasks.dragIgnoredItem) {
                 return;
@@ -1256,8 +1256,6 @@ MouseArea {
                 PropertyChanges {
                     target: iconBox
                     anchors.leftMargin: 0
-                    width: parent.width - adjustMargin(true, task.width, taskFrame.margins.left)
-                                        - adjustMargin(true, task.width, taskFrame.margins.right)
                 }
             }
         ]
