@@ -119,7 +119,7 @@ PlasmaExtras.Menu {
         var textMetrics = Qt.createQmlObject("import QtQuick 2.4; TextMetrics {}", menu);
         var maximumWidth = LayoutManager.maximumContextMenuTextWidth();
 
-        sections.forEach(function (section) {
+        sections.forEach(function (section, idx) {
             if (section["actions"].length > 0) {
                 var sectionHeader = newMenuItem(menu);
                 sectionHeader.text = section["title"];
@@ -173,7 +173,16 @@ PlasmaExtras.Menu {
             }
 
             if (section["actions"].length > 0) {
-                menu.addMenuItem(newSeparator(menu), startNewInstanceItem);
+                // Only add a separator after this section if there are no
+                // subsequent sections that contain actions. This avoids
+                // showing separators between two non-empty sections.
+                var hasFollowingSectionWithActions = false;
+                for (var j = idx + 1; j < sections.length; ++j) {
+                    if (sections[j]["actions"].length > 0) { hasFollowingSectionWithActions = true; break; }
+                }
+                if (!hasFollowingSectionWithActions) {
+                    menu.addMenuItem(newSeparator(menu), startNewInstanceItem);
+                }
             }
         });
 
