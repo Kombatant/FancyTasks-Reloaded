@@ -120,18 +120,11 @@ PlasmaExtras.Menu {
         var maximumWidth = LayoutManager.maximumContextMenuTextWidth();
 
         sections.forEach(function (section) {
-            if (section["actions"].length > 0 || section["group"] == "actions") {
-                // Don't add the "Actions" header if the menu has nothing but actions
-                // in it, because then it's redundant (all menus have actions)
-                if (
-                    (section["group"] != "actions") ||
-                    (section["group"] == "actions" && (sections[0]["actions"].length > 0 || sections[1]["actions"].length > 0))
-                ) {
-                    var sectionHeader = newMenuItem(menu);
-                    sectionHeader.text = section["title"];
-                    sectionHeader.section = true;
-                    menu.addMenuItem(sectionHeader, startNewInstanceItem);
-                }
+            if (section["actions"].length > 0) {
+                var sectionHeader = newMenuItem(menu);
+                sectionHeader.text = section["title"];
+                sectionHeader.section = true;
+                menu.addMenuItem(sectionHeader, startNewInstanceItem);
             }
 
             for (var i = 0; i < section["actions"].length; ++i) {

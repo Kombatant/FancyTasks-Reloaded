@@ -532,15 +532,23 @@ QtObject {
         var cacheTime = _recentDocsCacheTime[storageId] || 0;
         var stale = (Date.now() - cacheTime) > 30000; // refresh every 30s
 
-        if (cached === undefined || (cached !== null && stale)) {
-            // Not queried yet, or stale — trigger async query
+        if (cached === undefined) {
+            // Not queried yet — trigger async query and return empty for first load
             _queryRecentDocs(storageId);
             return [];
         }
+
         if (cached === null) {
             // Query in-flight
             return [];
         }
+
+        // If we have cached results but they're stale, refresh in background
+        // but return the cached list immediately so the menu isn't empty.
+        if (stale) {
+            _queryRecentDocs(storageId);
+        }
+
         return cached;
     }
 
