@@ -19,7 +19,7 @@ This repository is an actively maintained Plasma 6 fork of the original FancyTas
 - Configurable grouping, sorting, launcher separation, and click behavior.
 - Multiple grouped-task interaction modes, including cycling, tooltip thumbnails, side-by-side window display, and textual lists when compositor support is limited.
 - Adjustable task sizing, icon scaling, icon pixel sizing, spacing, and stripe layout.
-- Optional hover bounce, floating icon shadows, and minimized-window previews.
+- Hover effects like bounce and magnifying glass, floating icon shadows, and minimized-window previews.
 - Audio-stream indicators for apps currently playing sound.
 - Custom indicator system with animated styles such as Metro, Ciliora, and Dashes.
 - Indicator position, size, color, min/max count, progress display, and minimized-state effects.
