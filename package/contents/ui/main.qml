@@ -31,12 +31,38 @@ PlasmoidItem {
     property bool iconsOnly: plasmoid.configuration.iconOnly
     readonly property bool manualSorting: plasmoid.configuration.sortingStrategy === 1
     readonly property bool effectiveSeparateLaunchers: !manualSorting || iconsOnly || plasmoid.configuration.separateLaunchers
-    property bool containsMouse: mouseTracker.containsMouse
+    property bool containsMouse: hoverTracker.hovered
+    property bool hoverEffectsActive: hoverTracker.hovered || hoverExitTimer.running
+    property real rawHoverPointerX: hoverTracker.point.position.x
+    property real rawHoverPointerY: hoverTracker.point.position.y
+    property real hoverPointerX: rawHoverPointerX
+    property real hoverPointerY: rawHoverPointerY
     property int smallSpacing: Kirigami.Units.smallSpacing
     property int iconSizeSmall: Kirigami.Units.iconSizes.small
     property int iconSizeMedium: Kirigami.Units.iconSizes.medium
     property int defaultFontWidth: Math.max(1, Math.ceil(defaultFontMetrics.advanceWidth))
     property int defaultFontHeight: Math.max(1, Math.ceil(defaultFontMetrics.height))
+    property int hoverLayoutRevision: 0
+    readonly property real hoverLayoutExtraLength: {
+        hoverLayoutRevision;
+        let total = 0;
+
+        if ((!plasmoid.configuration.hoverEffectsEnabled && !plasmoid.configuration.hoverBounce)
+            || Number(plasmoid.configuration.hoverEffectMode || 0) !== 1) {
+            return 0;
+        }
+
+        for (let i = 0; i < taskRepeater.count; ++i) {
+            const item = taskRepeater.itemAt(i);
+            if (!item) {
+                continue;
+            }
+
+            total += vertical ? item.hoverLayoutExtraHeight : item.hoverLayoutExtraWidth;
+        }
+
+        return total;
+    }
 
     property var toolTipOpenedByClick: null
 
@@ -53,11 +79,25 @@ PlasmoidItem {
         text: "m"
     }
 
-    MouseArea {
-        id: mouseTracker
-        anchors.fill: parent
-        acceptedButtons: Qt.NoButton
-        hoverEnabled: true
+    HoverHandler {
+        id: hoverTracker
+        target: null
+    }
+
+    Behavior on hoverPointerX {
+        SmoothedAnimation {
+            velocity: 2200
+            reversingMode: SmoothedAnimation.Immediate
+            maximumEasingTime: 90
+        }
+    }
+
+    Behavior on hoverPointerY {
+        SmoothedAnimation {
+            velocity: 2200
+            reversingMode: SmoothedAnimation.Immediate
+            maximumEasingTime: 90
+        }
     }
 
     preferredRepresentation: fullRepresentation
@@ -71,12 +111,12 @@ PlasmoidItem {
 
     Layout.preferredWidth: tasks.vertical ? Kirigami.Units.gridUnit * 10 :
                            (LayoutManager.logicalTaskCount() === 0 ? 0.01 : //Return a small non-zero value to make the panel account for the change in size
-                           (LayoutManager.logicalTaskCount() * LayoutManager.preferredMaxWidth()) / LayoutManager.calculateStripes())
+                           ((LayoutManager.logicalTaskCount() * LayoutManager.preferredMaxWidth()) / LayoutManager.calculateStripes()) + hoverLayoutExtraLength)
 
 
-    Layout.preferredHeight: !tasks.vertical ? Kirigami.Units.gridUnit * 2 :
+    Layout.preferredHeight: !tasks.vertical ? Kirigami.Units.gridUnit * 2 + hoverLayoutExtraLength :
                             (LayoutManager.logicalTaskCount() === 0 ? 0.01 : //Same as above
-                            (LayoutManager.logicalTaskCount() * LayoutManager.preferredMaxHeight()) / LayoutManager.calculateStripes())
+                            ((LayoutManager.logicalTaskCount() * LayoutManager.preferredMaxHeight()) / LayoutManager.calculateStripes()) + hoverLayoutExtraLength)
 
 //END TODO
 
@@ -89,6 +129,22 @@ PlasmoidItem {
         repeat: false
         interval: 750
         onTriggered: tasks.dragIgnoredItem = null
+    }
+
+    Timer {
+        id: hoverExitTimer
+        repeat: false
+        interval: 110
+    }
+
+    Timer {
+        id: hoverLayoutTimer
+        repeat: false
+        interval: 16
+        onTriggered: {
+            hoverLayoutRevision++;
+            requestLayout();
+        }
     }
 
     signal requestLayout
@@ -120,11 +176,31 @@ PlasmoidItem {
     }
 
     onContainsMouseChanged: {
+        if (containsMouse) {
+            hoverExitTimer.stop();
+            hoverPointerX = rawHoverPointerX;
+            hoverPointerY = rawHoverPointerY;
+        } else {
+            hoverExitTimer.restart();
+        }
+
         if (!containsMouse && needLayoutRefresh) {
             LayoutManager.layout(taskRepeater)
             needLayoutRefresh = false;
         }
     }
+
+    onRawHoverPointerXChanged: {
+        hoverPointerX = rawHoverPointerX;
+    }
+
+    onRawHoverPointerYChanged: {
+        hoverPointerY = rawHoverPointerY;
+    }
+
+    onHoverPointerXChanged: if (!vertical) refreshHoverLayout()
+    onHoverPointerYChanged: if (vertical) refreshHoverLayout()
+    onHoverEffectsActiveChanged: refreshHoverLayout()
 
     TaskManager.TasksModel {
         id: tasksModel
@@ -505,6 +581,15 @@ PlasmoidItem {
 
     function resetDragSource() {
         dragSource = null;
+    }
+
+    function refreshHoverLayout() {
+        if (Number(plasmoid.configuration.hoverEffectMode || 0) !== 1
+            || (!plasmoid.configuration.hoverEffectsEnabled && !plasmoid.configuration.hoverBounce)) {
+            return;
+        }
+
+        hoverLayoutTimer.restart();
     }
 
     function createContextMenu(rootTask, modelIndex, args = {}) {

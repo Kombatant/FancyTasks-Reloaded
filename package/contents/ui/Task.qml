@@ -95,6 +95,84 @@ MouseArea {
         return luminance >= 0.5 ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(1, 1, 1, 0.28);
     }
     readonly property int iconShadowType: plasmoid.configuration.floatingIconShadowType || 0
+    readonly property bool hoverEffectsEnabled: !!plasmoid.configuration.hoverEffectsEnabled || !!plasmoid.configuration.hoverBounce
+    readonly property int hoverEffectMode: Number(plasmoid.configuration.hoverEffectMode || 0)
+    readonly property bool hoverBounceEnabled: hoverEffectsEnabled && hoverEffectMode === 0 && highlighted
+    readonly property bool hoverMagnifyEnabled: hoverEffectsEnabled && hoverEffectMode === 1 && !inPopup && tasks.hoverEffectsActive
+    readonly property real hoverMagnifyProgress: hoverEffectProgress(icon)
+    property real baseTaskWidth: width
+    property real baseTaskHeight: height
+    readonly property real hoverLayoutExtraWidth: hoverMagnifyEnabled && !tasks.vertical
+        ? Math.max(0, baseTaskWidth * (hoverScaleForItem(icon) - 1))
+        : 0
+    readonly property real hoverLayoutExtraHeight: hoverMagnifyEnabled && tasks.vertical
+        ? Math.max(0, baseTaskHeight * (hoverScaleForItem(icon) - 1))
+        : 0
+    z: hoverEffectsEnabled ? Math.round((hoverBounceEnabled ? 1 : hoverMagnifyProgress) * 100) : 0
+
+    function hoverEffectProgress(item) {
+        if (!hoverMagnifyEnabled || !item) {
+            return 0;
+        }
+
+        const center = item.mapToItem(tasks, item.width / 2, item.height / 2);
+        const pointer = tasks.vertical ? tasks.hoverPointerY : tasks.hoverPointerX;
+        const axisCenter = tasks.vertical ? center.y : center.x;
+        const span = tasks.vertical ? item.height : item.width;
+        const influenceRadius = Math.max(span * 2.6, Kirigami.Units.gridUnit * 4);
+        const normalized = Math.max(0, 1 - (Math.abs(axisCenter - pointer) / influenceRadius));
+
+        return Math.sin(normalized * Math.PI / 2);
+    }
+
+    function hoverScaleForItem(item) {
+        if (hoverBounceEnabled) {
+            return 1.06;
+        }
+
+        return 1 + (hoverEffectProgress(item) * 0.72);
+    }
+
+    function hoverOffsetForItem(item, axis) {
+        if (!item) {
+            return 0;
+        }
+
+        const span = axis === "x" ? item.width : item.height;
+        let amount = 0;
+
+        if (hoverBounceEnabled) {
+            amount = Math.min(12, span * 0.12);
+        } else {
+            amount = span * 0.32 * hoverEffectProgress(item);
+        }
+
+        if (amount <= 0) {
+            return 0;
+        }
+
+        if (axis === "x") {
+            if (plasmoid.location === PlasmaCore.Types.LeftEdge) {
+                return -amount;
+            }
+
+            if (plasmoid.location === PlasmaCore.Types.RightEdge) {
+                return amount;
+            }
+
+            return 0;
+        }
+
+        if (plasmoid.location === PlasmaCore.Types.BottomEdge) {
+            return -amount;
+        }
+
+        if (plasmoid.location === PlasmaCore.Types.TopEdge) {
+            return amount;
+        }
+
+        return 0;
+    }
 
     Accessible.name: model.display
     Accessible.description: model.display ? i18n("Activate %1", model.display) : ""
@@ -852,17 +930,17 @@ MouseArea {
             transform: [
                 Translate {
                     id: hoverTranslate
-                    x: (plasmoid.configuration.hoverBounce && task.highlighted) ? (plasmoid.location === PlasmaCore.Types.LeftEdge ? -Math.min(12, icon.width * 0.12) : (plasmoid.location === PlasmaCore.Types.RightEdge ? Math.min(12, icon.width * 0.12) : 0)) : 0
+                    x: task.hoverOffsetForItem(icon, "x")
                     Behavior on x { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                     Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
-                    y: (plasmoid.configuration.hoverBounce && task.highlighted) ? (plasmoid.location === PlasmaCore.Types.BottomEdge ? -Math.min(12, icon.height * 0.12) : (plasmoid.location === PlasmaCore.Types.TopEdge ? Math.min(12, icon.height * 0.12) : 0)) : 0
+                    y: task.hoverOffsetForItem(icon, "y")
                 },
                 Scale {
                     id: hoverScale
                     origin.x: icon.width / 2
                     origin.y: icon.height / 2
-                    xScale: (plasmoid.configuration.hoverBounce && task.highlighted) ? 1.06 : 1.0
-                    yScale: (plasmoid.configuration.hoverBounce && task.highlighted) ? 1.06 : 1.0
+                    xScale: task.hoverScaleForItem(icon)
+                    yScale: task.hoverScaleForItem(icon)
                     Behavior on xScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                     Behavior on yScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                 }
@@ -1020,16 +1098,16 @@ MouseArea {
 
                 transform: [
                     Translate {
-                        x: (plasmoid.configuration.hoverBounce && task.highlighted) ? (plasmoid.location === PlasmaCore.Types.LeftEdge ? -Math.min(12, icon.width * 0.12) : (plasmoid.location === PlasmaCore.Types.RightEdge ? Math.min(12, icon.width * 0.12) : 0)) : 0
-                        y: (plasmoid.configuration.hoverBounce && task.highlighted) ? (plasmoid.location === PlasmaCore.Types.BottomEdge ? -Math.min(12, icon.height * 0.12) : (plasmoid.location === PlasmaCore.Types.TopEdge ? Math.min(12, icon.height * 0.12) : 0)) : 0
+                        x: task.hoverOffsetForItem(previewContent, "x")
+                        y: task.hoverOffsetForItem(previewContent, "y")
                         Behavior on x { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                         Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                     },
                     Scale {
                         origin.x: width / 2
                         origin.y: height / 2
-                        xScale: (plasmoid.configuration.hoverBounce && task.highlighted) ? 1.06 : 1.0
-                        yScale: (plasmoid.configuration.hoverBounce && task.highlighted) ? 1.06 : 1.0
+                        xScale: task.hoverScaleForItem(previewContent)
+                        yScale: task.hoverScaleForItem(previewContent)
                         Behavior on xScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                         Behavior on yScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                     }
@@ -1152,16 +1230,16 @@ MouseArea {
                     height: width
                     transform: [
                         Translate {
-                            x: (plasmoid.configuration.hoverBounce && task.highlighted) ? (plasmoid.location === PlasmaCore.Types.LeftEdge ? -Math.min(12, width * 0.12) : (plasmoid.location === PlasmaCore.Types.RightEdge ? Math.min(12, width * 0.12) : 0)) : 0
-                            y: (plasmoid.configuration.hoverBounce && task.highlighted) ? (plasmoid.location === PlasmaCore.Types.BottomEdge ? -Math.min(12, height * 0.12) : (plasmoid.location === PlasmaCore.Types.TopEdge ? Math.min(12, height * 0.12) : 0)) : 0
+                            x: task.hoverOffsetForItem(previewBadgeIcon, "x")
+                            y: task.hoverOffsetForItem(previewBadgeIcon, "y")
                             Behavior on x { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                             Behavior on y { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                         },
                         Scale {
                             origin.x: width / 2
                             origin.y: height / 2
-                            xScale: (plasmoid.configuration.hoverBounce && task.highlighted) ? 1.06 : 1.0
-                            yScale: (plasmoid.configuration.hoverBounce && task.highlighted) ? 1.06 : 1.0
+                            xScale: task.hoverScaleForItem(previewBadgeIcon)
+                            yScale: task.hoverScaleForItem(previewBadgeIcon)
                             Behavior on xScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                             Behavior on yScale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                         }

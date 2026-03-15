@@ -128,8 +128,16 @@
       <label>Whether task buttons should change in appearance when the mouse pointer is above them.</label>
       <default>true</default>
     </entry>
+    <entry name="hoverEffectsEnabled" type="Bool">
+      <label>Enable icon hover effects.</label>
+      <default>false</default>
+    </entry>
+    <entry name="hoverEffectMode" type="Int">
+      <label>Select the icon hover effect. 0 = Bounce, 1 = Magnifying Glass</label>
+      <default>0</default>
+    </entry>
     <entry name="hoverBounce" type="Bool">
-      <label>Enable bounce (raise/scale) effect on task icons when hovered.</label>
+      <label>Legacy hover bounce setting kept for compatibility.</label>
       <default>false</default>
     </entry>
     <entry name="floatingIconShadow" type="Bool">

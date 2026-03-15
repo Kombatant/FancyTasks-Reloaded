@@ -95,17 +95,17 @@ function optimumCapacity(width, height) {
 
 function layoutWidth() {
     if (plasmoid.configuration.forceStripes && !tasks.vertical) {
-        return Math.min(tasks.width - (tasksPerStripe() * plasmoid.configuration.taskSpacingSize), Math.max(preferredMaxWidth(), tasksPerStripe() * preferredMaxWidth()));
+        return Math.min(tasks.width - (tasksPerStripe() * plasmoid.configuration.taskSpacingSize), Math.max(preferredMaxWidth(), tasksPerStripe() * preferredMaxWidth())) + tasks.hoverLayoutExtraLength;
     } else {
-        return tasks.width;
+        return tasks.width + (tasks.vertical ? 0 : tasks.hoverLayoutExtraLength);
     }
 }
 
 function layoutHeight() {
     if (plasmoid.configuration.forceStripes && tasks.vertical) {
-        return Math.min(tasks.height - (tasksPerStripe() * plasmoid.configuration.taskSpacingSize), Math.max(preferredMaxHeight(), tasksPerStripe() * preferredMaxHeight()));
+        return Math.min(tasks.height - (tasksPerStripe() * plasmoid.configuration.taskSpacingSize), Math.max(preferredMaxHeight(), tasksPerStripe() * preferredMaxHeight())) + tasks.hoverLayoutExtraLength;
     } else {
-        return tasks.height;
+        return tasks.height + (tasks.vertical ? tasks.hoverLayoutExtraLength : 0);
     }
 }
 
@@ -242,8 +242,10 @@ function layout(container) {
             }
         }
 
-        item.width = adjustedWidth;
-        item.height = height;
+        item.baseTaskWidth = adjustedWidth;
+        item.baseTaskHeight = height;
+        item.width = adjustedWidth + (item.hoverLayoutExtraWidth || 0);
+        item.height = height + (item.hoverLayoutExtraHeight || 0);
         item.visible = true;
     }
 }

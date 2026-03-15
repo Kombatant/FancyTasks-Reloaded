@@ -115,6 +115,10 @@ KCM.SimpleKCM {
     property var cfg_taskSpacingSizeDefault
     property var cfg_hoverBounce
     property var cfg_hoverBounceDefault
+    property var cfg_hoverEffectsEnabled
+    property var cfg_hoverEffectsEnabledDefault
+    property var cfg_hoverEffectMode
+    property var cfg_hoverEffectModeDefault
     property var cfg_floatingIconShadow
     property var cfg_floatingIconShadowDefault
     property var cfg_floatingIconShadowType

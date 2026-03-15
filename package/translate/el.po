@@ -59,6 +59,22 @@ msgid "Use plasma borders"
 msgstr "Χρήση περιγραμμάτων Plasma"
 
 #: ../contents/ui/ConfigAppearance.qml
+msgid "Hover effects"
+msgstr "Εφέ αιώρησης"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Hover effect type:"
+msgstr "Τύπος εφέ αιώρησης:"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Bounce"
+msgstr "Αναπήδηση"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Magnifying Glass"
+msgstr "Μεγεθυντικός φακός"
+
+#: ../contents/ui/ConfigAppearance.qml
 msgid "Icon Scale"
 msgstr "Κλίμακα εικονιδίων"
 

@@ -60,6 +60,22 @@ msgid "Use plasma borders"
 msgstr "Plasmakaders gebruiken"
 
 #: ../contents/ui/ConfigAppearance.qml
+msgid "Hover effects"
+msgstr "Zweefeffecten"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Hover effect type:"
+msgstr "Type zweefeffect:"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Bounce"
+msgstr "Stuiteren"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Magnifying Glass"
+msgstr "Vergrootglas"
+
+#: ../contents/ui/ConfigAppearance.qml
 msgid "Icon Scale"
 msgstr "Pictogramschaal"
 

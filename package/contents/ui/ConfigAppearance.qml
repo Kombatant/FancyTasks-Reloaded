@@ -33,6 +33,9 @@ ConfigPage {
     property alias cfg_useBorders: useBorders.checked
     property alias cfg_minimizedWindowPreview: minimizedWindowPreview.checked
     property alias cfg_taskSpacingSize: taskSpacingSize.value
+    property bool cfg_hoverBounce
+    property bool cfg_hoverEffectsEnabled
+    property int cfg_hoverEffectMode
     property alias cfg_floatingIconShadow: floatingIconShadow.checked
     property alias cfg_floatingIconShadowType: floatingIconShadowType.currentIndex
 
@@ -86,10 +89,33 @@ Kirigami.FormLayout {
     }
 
     CheckBox {
-        id: hoverBounce
-        text: i18n("Enable bounce effect on hover")
-        checked: cfg_hoverBounce === true
-        onCheckedChanged: cfg_hoverBounce = checked
+        id: hoverEffectsEnabled
+        text: i18n("Hover effects")
+        checked: cfg_hoverEffectsEnabled
+        onCheckedChanged: {
+            cfg_hoverEffectsEnabled = checked
+            if (!checked) {
+                cfg_hoverBounce = false
+            }
+        }
+
+        Component.onCompleted: {
+            if (!cfg_hoverEffectsEnabled && cfg_hoverBounce) {
+                cfg_hoverEffectsEnabled = true
+            }
+        }
+    }
+
+    ComboBox {
+        id: hoverEffectMode
+        Kirigami.FormData.label: i18n("Hover effect type:")
+        enabled: hoverEffectsEnabled.checked
+        currentIndex: cfg_hoverEffectMode
+        onActivated: cfg_hoverEffectMode = currentIndex
+        model: [
+            i18n("Bounce"),
+            i18n("Magnifying Glass")
+        ]
     }
 
     CheckBox {

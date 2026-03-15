@@ -59,6 +59,22 @@ msgid "Use plasma borders"
 msgstr "使用plasma边框"
 
 #: ../contents/ui/ConfigAppearance.qml
+msgid "Hover effects"
+msgstr "悬停效果"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Hover effect type:"
+msgstr "悬停效果类型："
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Bounce"
+msgstr "弹跳"
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Magnifying Glass"
+msgstr "放大镜"
+
+#: ../contents/ui/ConfigAppearance.qml
 msgid "Icon Scale"
 msgstr "图标缩放"
 
