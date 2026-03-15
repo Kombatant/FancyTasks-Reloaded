@@ -136,13 +136,12 @@ Translation helper files live under `package/translate/`. The existing translati
 
 ## Screenshots
 
-![Colorful tasks](docs/colorfulicons%20crop.png)
-![Metro](docs/metro.png)
-![Ciliora](docs/ciliora.png)
-![Dashes](docs/dashes.png)
-![Dots](docs/dots.png)
-![Desaturated minimized tasks](docs/desaturate%20crop.png)
-![Minimized task shrinking](docs/shrink%20crop.png)
+![Default - Dark mode](docs/fancytasks_reloaded_1.png)
+![Default - Light mode](docs/fancytasks_reloaded_2.png)
+![Minimized previews](docs/fancytasks_reloaded_3.png)
+![Magnifying Glass](docs/fancytasks_reloaded_4.png)
+![Dots](docs/fancytasks_reloaded_5.png)
+![Settings](docs/fancytasks_reloaded_6.png)
 
 ## Contact
 
