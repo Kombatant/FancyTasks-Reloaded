@@ -478,6 +478,10 @@ msgid "Dashes"
 msgstr ""
 
 #: ../contents/ui/ConfigIndicators.qml
+msgid "Dots"
+msgstr ""
+
+#: ../contents/ui/ConfigIndicators.qml
 msgid "Indicator Min Limit:"
 msgstr ""
 

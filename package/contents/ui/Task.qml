@@ -60,6 +60,7 @@ MouseArea {
     readonly property bool isMetro: plasmoid.configuration.indicatorStyle === 0
     readonly property bool isCiliora: plasmoid.configuration.indicatorStyle === 1
     readonly property bool isDashes: plasmoid.configuration.indicatorStyle === 2
+    readonly property bool isDots: plasmoid.configuration.indicatorStyle === 3
 
     property Item audioStreamOverlay
     property var audioStreams: []
@@ -666,6 +667,7 @@ MouseArea {
                             indicatorComputedSize = mainSize - (Math.min(task.childCount, maxStates === 1 ? 0 : maxStates)  * (spacing + indicatorLength)) - adjust
                             break
                             case 2:
+                            case 3:
                             indicatorComputedSize = plasmoid.configuration.indicatorGrow && task.state !== "minimized" ? indicatorLength * growFactor : indicatorLength
                             break
                             default:
@@ -697,8 +699,20 @@ MouseArea {
                 }
                 width: computedVar.width
                 height: computedVar.height
-                color: computedVar.colorCalc
+                color: plasmoid.configuration.indicatorStyle === 3 ? "transparent" : computedVar.colorCalc
                 radius: (Math.max(width, height) / Math.min(width,  height)) * (plasmoid.configuration.indicatorRadius / 100)
+                Rectangle {
+                    id: dotShape
+                    visible: plasmoid.configuration.indicatorStyle === 3
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, parent.height)
+                    height: width
+                    color: computedVar.colorCalc
+                    radius: width / 2
+
+                    Behavior on color { PropertyAnimation {duration: plasmoid.configuration.indicatorsAnimated ? 250 : 0} }
+                    Behavior on radius { PropertyAnimation {duration: plasmoid.configuration.indicatorsAnimated ? 250 : 0} }
+                }
                 Rectangle{
                     Behavior on height { PropertyAnimation {duration: plasmoid.configuration.indicatorsAnimated ? 250 : 0} }
                     Behavior on width { PropertyAnimation {duration: plasmoid.configuration.indicatorsAnimated ? 250 : 0} }
@@ -706,10 +720,10 @@ MouseArea {
                     Behavior on radius { PropertyAnimation {duration: plasmoid.configuration.indicatorsAnimated ? 250 : 0} }
                     visible:  task.isWindow && task.smartLauncherItem && task.smartLauncherItem.progressVisible && isFirst && plasmoid.configuration.indicatorProgress
                     anchors{
-                        top: isVertical ? undefined : parent.top
-                        bottom: isVertical ? undefined : parent.bottom
-                        left: isVertical ? parent.left : undefined
-                        right: isVertical ? parent.right : undefined
+                        top: plasmoid.configuration.indicatorStyle === 3 ? dotShape.top : parent.top
+                        bottom: isVertical ? undefined : (plasmoid.configuration.indicatorStyle === 3 ? dotShape.bottom : parent.bottom)
+                        left: plasmoid.configuration.indicatorStyle === 3 ? dotShape.left : parent.left
+                        right: isVertical ? (plasmoid.configuration.indicatorStyle === 3 ? dotShape.right : parent.right) : undefined
                     }
                     readonly property var progress: {
                         if(task.smartLauncherItem && task.smartLauncherItem.progressVisible && task.smartLauncherItem.progress){
@@ -717,9 +731,9 @@ MouseArea {
                         }
                         return 0
                     }
-                    width: isVertical ? parent.width : parent.width * progress
-                    height: isVertical ? parent.height * progress : parent.height
-                    radius: parent.radius
+                    width: isVertical ? (plasmoid.configuration.indicatorStyle === 3 ? dotShape.width : parent.width) : (plasmoid.configuration.indicatorStyle === 3 ? dotShape.width : parent.width) * progress
+                    height: isVertical ? (plasmoid.configuration.indicatorStyle === 3 ? dotShape.height : parent.height) * progress : (plasmoid.configuration.indicatorStyle === 3 ? dotShape.height : parent.height)
+                    radius: plasmoid.configuration.indicatorStyle === 3 ? dotShape.radius : parent.radius
                     color: plasmoid.configuration.indicatorProgressColor
                 }
             }   

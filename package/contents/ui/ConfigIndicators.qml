@@ -141,7 +141,8 @@ Kirigami.FormLayout {
         model: [
             i18n("Metro"),
             i18n("Ciliora"),
-            i18n("Dashes")
+            i18n("Dashes"),
+            i18n("Dots")
             ]
     }
 

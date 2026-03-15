@@ -21,7 +21,7 @@ This repository is an actively maintained Plasma 6 fork of the original FancyTas
 - Adjustable task sizing, icon scaling, icon pixel sizing, spacing, and stripe layout.
 - Hover effects like bounce and magnifying glass, floating icon shadows, and minimized-window previews.
 - Audio-stream indicators for apps currently playing sound.
-- Custom indicator system with animated styles such as Metro, Ciliora, and Dashes.
+- Custom indicator system with animated styles such as Metro, Ciliora, Dashes, and Dots.
 - Indicator position, size, color, min/max count, progress display, and minimized-state effects.
 - Button colorization using Plasma accent color, dominant icon color, or a custom color.
 - Plasma border and button-decoration overrides for floating or heavily customized panels.

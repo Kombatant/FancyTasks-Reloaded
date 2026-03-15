@@ -193,7 +193,7 @@
       <default>0</default>
     </entry>
     <entry name="indicatorStyle" type="Int">
-      <label>Select between 1 of 3 indicator styles. 0 = Metro, 1 = Cliora, 2 = Dots</label>
+      <label>Select between 1 of 4 indicator styles. 0 = Metro, 1 = Ciliora, 2 = Dashes, 3 = Dots</label>
       <default>0</default>
     </entry>
     <entry name="indicatorMinLimit" type="Int">
