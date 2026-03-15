@@ -200,8 +200,20 @@ MouseArea {
     onAppNameChanged: updateAudioStreams({delay: false})
 
     onIsWindowChanged: {
+        console.log("[fancytasks_rld][Task] onIsWindowChanged; isWindow=", isWindow,
+                    "appName=", appName, "itemIndex=", itemIndex,
+                    "IsLauncher=", model.IsLauncher, "HasLauncher=", model.HasLauncher);
         if (isWindow) {
             taskInitComponent.createObject(task);
+        }
+        // A launcher→window (or window→launcher) transform is a data-only
+        // change in the model — no rows are added or removed, so the
+        // Repeater's onItemAdded never fires.  Without an explicit layout
+        // request the item keeps its stale size/position from the previous
+        // layout() pass, which is why the last pinned open app could appear
+        // in the wrong spot after a plasmashell restart.
+        if (!inPopup) {
+            tasks.requestLayout();
         }
     }
 
@@ -214,6 +226,9 @@ MouseArea {
     }
 
     onItemIndexChanged: {
+        console.log("[fancytasks_rld][Task] onItemIndexChanged; itemIndex=", itemIndex,
+                    "appName=", appName, "isWindow=", isWindow,
+                    "IsLauncher=", model.IsLauncher);
         hideToolTipTemporarily();
 
         if (!inPopup && !tasks.vertical

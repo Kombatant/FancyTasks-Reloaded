@@ -31,6 +31,7 @@ PlasmoidItem {
     property bool iconsOnly: plasmoid.configuration.iconOnly
     readonly property bool manualSorting: plasmoid.configuration.sortingStrategy === 1
     readonly property bool effectiveSeparateLaunchers: !manualSorting || iconsOnly || plasmoid.configuration.separateLaunchers
+    property bool _reconciling: false
     property bool containsMouse: hoverTracker.hovered
     property bool hoverEffectsActive: hoverTracker.hovered || hoverExitTimer.running
     property real rawHoverPointerX: hoverTracker.point.position.x
@@ -243,7 +244,9 @@ PlasmoidItem {
 
         onLauncherListChanged: {
             layoutTimer.restart();
-            plasmoid.configuration.launchers = launcherList;
+            if (!tasks._reconciling) {
+                plasmoid.configuration.launchers = launcherList;
+            }
         }
 
         onGroupingAppIdBlacklistChanged: {
@@ -313,7 +316,32 @@ PlasmoidItem {
     Connections {
         target: tasksModel
         function onCountChanged() {
+            console.log("[fancytasks_rld] tasksModel.countChanged; count=", tasksModel.count,
+                        "launcherCount=", tasksModel.launcherCount);
             precacheTimer.restart();
+        }
+        // dataChanged fires when a model row's roles change *without*
+        // adding or removing rows — e.g. a pinned launcher transforming
+        // into a running window at startup.  The Repeater does NOT emit
+        // onItemAdded for such changes, so the layout would never be
+        // recalculated.  Restarting the zero-interval layoutTimer
+        // batches rapid-fire dataChanged signals into a single relayout.
+        function onDataChanged(topLeft, bottomRight, roles) {
+            console.log("[fancytasks_rld] tasksModel.dataChanged; rows",
+                        topLeft.row, "-", bottomRight.row);
+            layoutTimer.restart();
+            // Reset the settle timer so we wait for the model to stop changing
+            // before re-applying launcher positions.
+            if (launcherReconcileTimer.running) {
+                launcherReconcileTimer.restart();
+            }
+        }
+        function onRowsMoved() {
+            console.log("[fancytasks_rld] tasksModel.rowsMoved");
+            layoutTimer.restart();
+            if (launcherReconcileTimer.running) {
+                launcherReconcileTimer.restart();
+            }
         }
     }
 
@@ -330,6 +358,95 @@ PlasmoidItem {
         repeat: false
         running: true
         onTriggered: backend.precacheAllLaunchers(tasksModel)
+    }
+
+    // Work around a race condition in the C++ TasksModel where, during
+    // startup, windows may be matched to the wrong launchers because
+    // KWin hasn't provided complete appId data yet.  After the model
+    // has been quiet for 1.5 s we detect misplaced window tasks
+    // (windows whose model position doesn't match their launcher list
+    // position) and correct them via tasksModel.move(), then re-apply
+    // the saved launcher list to restore the correct sort order.
+    Timer {
+        id: launcherReconcileTimer
+        interval: 1500
+        repeat: false
+        running: true          // starts ticking at Component creation
+        onTriggered: {
+            console.log("[fancytasks_rld] launcherReconcileTimer fired — checking for misplaced tasks");
+            var launchers = plasmoid.configuration.launchers;
+
+            // Build URL → expected launcher position map.
+            // The launcher list may contain preferred:// URLs (e.g.
+            // preferred://filemanager) that the model resolves to the
+            // actual desktop file URL.  We build the map from the exact
+            // launcher URLs first, then match unresolved preferred://
+            // entries with model items whose LauncherUrlWithoutIcon
+            // doesn't appear in the list.
+            var urlToPos = {};
+            var preferredPositions = [];  // positions of preferred:// entries
+            for (var k = 0; k < launchers.length; k++) {
+                urlToPos[launchers[k]] = k;
+                if (launchers[k].indexOf("preferred://") === 0) {
+                    preferredPositions.push(k);
+                }
+            }
+
+            // Resolve preferred:// entries by finding model items whose
+            // resolved URL isn't already in the map.
+            if (preferredPositions.length > 0) {
+                var unmatchedItems = [];
+                for (var i = 0; i < taskRepeater.count; i++) {
+                    var item = taskRepeater.itemAt(i);
+                    if (item && item.m && item.m.HasLauncher) {
+                        var resolvedUrl = item.m.LauncherUrlWithoutIcon;
+                        if (resolvedUrl && urlToPos[resolvedUrl] === undefined) {
+                            unmatchedItems.push(resolvedUrl);
+                        }
+                    }
+                }
+                // Match each unmatched resolved URL to a preferred://
+                // position.  With ≤2 preferred entries this is reliable.
+                for (var p = 0; p < preferredPositions.length && p < unmatchedItems.length; p++) {
+                    urlToPos[unmatchedItems[p]] = preferredPositions[p];
+                    console.log("[fancytasks_rld] reconcile: resolved preferred pos "
+                              + preferredPositions[p] + " → " + unmatchedItems[p]);
+                }
+            }
+
+            // Block config saves during reconciliation
+            tasks._reconciling = true;
+
+            var maxPasses = 20;
+            var pass = 0;
+            var moved = true;
+            while (moved && pass < maxPasses) {
+                moved = false;
+                pass++;
+                for (var i = 0; i < taskRepeater.count; i++) {
+                    var item = taskRepeater.itemAt(i);
+                    if (!item || !item.m) continue;
+                    if (!item.m.IsWindow || !item.m.HasLauncher) continue;
+                    var url = item.m.LauncherUrlWithoutIcon;
+                    if (!url || urlToPos[url] === undefined) continue;
+                    var expectedPos = urlToPos[url];
+                    if (i !== expectedPos) {
+                        console.log("[fancytasks_rld] reconcile: MOVING " + item.m.AppName
+                                  + " from " + i + " to " + expectedPos);
+                        tasksModel.move(i, expectedPos);
+                        moved = true;
+                        break; // restart scan — indices shifted
+                    }
+                }
+            }
+
+            // Re-apply the original launcher list to undo any corruption
+            // from move(), then allow config saves again.
+            tasksModel.launcherList = launchers;
+            tasks._reconciling = false;
+
+            console.log("[fancytasks_rld] reconcile done — " + pass + " passes");
+        }
     }
 
     MprisUnavailable {
@@ -506,6 +623,7 @@ PlasmoidItem {
         }
 
         function layout() {
+            console.log("[fancytasks_rld] taskList.layout() called");
             taskList.width = LayoutManager.layoutWidth();
             taskList.height = LayoutManager.layoutHeight();
             LayoutManager.layout(taskRepeater);
@@ -518,7 +636,10 @@ PlasmoidItem {
             interval: 0
             repeat: false
 
-            onTriggered: taskList.layout()
+            onTriggered: {
+                console.log("[fancytasks_rld] layoutTimer fired");
+                taskList.layout();
+            }
         }
 
         Repeater {
@@ -528,6 +649,7 @@ PlasmoidItem {
                 readonly property bool isSubTask: false
             }
             onItemAdded: {
+                console.log("[fancytasks_rld] Repeater.onItemAdded; index=", index);
                 taskList.layout()
 
             }

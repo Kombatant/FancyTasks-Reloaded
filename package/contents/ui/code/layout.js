@@ -216,6 +216,11 @@ function layout(container) {
     var adjustedWidth = width;
     var height = taskHeight();
 
+    console.log("[fancytasks_rld][layout] layout() called; count=" + tasksModel.count
+                + " launcherCount=" + tasksModel.logicalLauncherCount
+                + " taskCount=" + taskCount + " stripes=" + stripes
+                + " width=" + width + " height=" + height);
+
     if (!tasks.vertical && stripes == 1 && taskCount)
     {
         var shrink = ((tasksModel.count - tasksModel.logicalLauncherCount) * preferredMaxWidth())
@@ -241,6 +246,11 @@ function layout(container) {
                 adjustedWidth += launcherLayoutWidthDiff();
             }
         }
+
+        console.log("[fancytasks_rld][layout]   item[" + i + "] appName=" + (item.appName || "?")
+                    + " IsLauncher=" + item.m.IsLauncher
+                    + " IsWindow=" + item.m.IsWindow
+                    + " w=" + adjustedWidth + " h=" + height);
 
         item.baseTaskWidth = adjustedWidth;
         item.baseTaskHeight = height;
