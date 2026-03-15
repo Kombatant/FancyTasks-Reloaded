@@ -36,6 +36,7 @@ Or if you know how to make a pull request
 |  Locale  |  Lines  | % Done|
 |----------|---------|-------|
 | Template |     165 |       |
-| nl       | 150/165 |   90% |
+| el       | 165/165 |  100% |
+| nl       | 165/165 |  100% |
 | pt_BR    | 165/165 |  100% |
-| zh_CN    | 150/165 |   90% |
+| zh_CN    | 165/165 |  100% |

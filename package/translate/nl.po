@@ -61,27 +61,27 @@ msgstr "Plasmakaders gebruiken"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Icon Scale"
-msgstr ""
+msgstr "Pictogramschaal"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Icon Size (px):"
-msgstr ""
+msgstr "Pictogramgrootte (px):"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Set icon size instead of scaling"
-msgstr ""
+msgstr "Pictogramgrootte instellen in plaats van schalen"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Button Colors:"
-msgstr ""
+msgstr "Knopkleuren:"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Using Plasma Style/Accent"
-msgstr ""
+msgstr "Plasma-stijl/-accent gebruiken"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Using Color Overlay"
-msgstr ""
+msgstr "Kleurlaag gebruiken"
 
 #: ../contents/ui/ConfigAppearance.qml ../contents/ui/ConfigIndicators.qml
 msgid "Use dominant icon color"
@@ -93,7 +93,7 @@ msgstr "Zelfgekozen kleur:"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Colorize inactive buttons"
-msgstr ""
+msgstr "Inactieve knoppen inkleuren"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Plasma Button Decorations:"
@@ -101,11 +101,11 @@ msgstr "Plasma-knopdecoraties:"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Disable All"
-msgstr ""
+msgstr "Alles uitschakelen"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Disable Inactive Buttons"
-msgstr ""
+msgstr "Inactieve knoppen uitschakelen"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Plasma Button Direction:"
@@ -409,15 +409,15 @@ msgstr "Ingeschakeld"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Display Progress on Indicator"
-msgstr ""
+msgstr "Voortgang op indicator tonen"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Progress Color:"
-msgstr ""
+msgstr "Voortgangskleur:"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Disable for Inactive Windows"
-msgstr ""
+msgstr "Uitschakelen voor inactieve vensters"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Group Overlay:"
@@ -461,7 +461,7 @@ msgstr "Bovenaan"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Indicator Edge Offset (px):"
-msgstr ""
+msgstr "Indicatorafstand vanaf rand (px):"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Indicator Style:"
@@ -481,11 +481,11 @@ msgstr "Streepjes"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Indicator Min Limit:"
-msgstr ""
+msgstr "Minimale indicatorlimiet:"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Indicator Max Limit:"
-msgstr ""
+msgstr "Maximale indicatorlimiet:"
 
 #: ../contents/ui/ConfigIndicators.qml
 msgid "Minimize Options:"
