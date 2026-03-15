@@ -825,7 +825,10 @@ MouseArea {
         anchors.fill: parent
         location: plasmoid.location
 
-        enabled: plasmoid.configuration.showToolTips && !inPopup && !tasks.groupDialog && (tasks.toolTipOpenedByClick === task || tasks.toolTipOpenedByClick === null)
+        enabled: plasmoid.configuration.showToolTips
+            && !inPopup
+            && !tasks.groupDialog
+            && (tasks.toolTipOpenedByClick === task || tasks.toolTipOpenedByClick === null)
         interactive: model.IsWindow === true || mainItem.hasPlayer
 
         // when the mouse leaves the tooltip area, a timer to hide is set for (timeout / 20) ms
