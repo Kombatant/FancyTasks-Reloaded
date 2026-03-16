@@ -112,6 +112,10 @@
       <label>Whether to indicate applications that are playing audio including an option to mute them.</label>
       <default>true</default>
     </entry>
+    <entry name="notificationBadges" type="Bool">
+      <label>Whether to show notification badges on task icons.</label>
+      <default>false</default>
+    </entry>
     <entry name="iconScale" type="Int">
       <label>Scale of taskbar icons.</label>
       <default>100</default>

@@ -22,6 +22,7 @@ ConfigPage {
     property alias cfg_showToolTips: showToolTips.checked
     property alias cfg_highlightWindows: highlightWindows.checked
     property bool cfg_indicateAudioStreams
+    property alias cfg_notificationBadges: notificationBadges.checked
     property alias cfg_iconScale: iconScale.value
     property alias cfg_iconSizePx: iconSizePx.value
     property alias cfg_iconSizeOverride: iconSizeOverride.checked
@@ -76,6 +77,11 @@ Kirigami.FormLayout {
         checked: cfg_indicateAudioStreams && plasmaPaAvailable
         onCheckedChanged: cfg_indicateAudioStreams = checked
         enabled: plasmaPaAvailable
+    }
+
+    CheckBox {
+        id: notificationBadges
+        text: i18n("Notification Badges (Experimental)")
     }
 
     CheckBox {

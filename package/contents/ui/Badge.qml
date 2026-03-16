@@ -19,6 +19,9 @@ Rectangle {
     property alias text: label.text
     property alias textColor: label.color
     property int number: 0
+    property color fillColor: Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0.3)
+    property color borderColor: Kirigami.Theme.highlightColor
+    readonly property color backgroundColor: Kirigami.Theme.highlightColor
 
     implicitWidth: Math.max(height, Math.round(label.contentWidth + radius / 2)) // Add some padding around.
     implicitHeight: implicitWidth
@@ -29,13 +32,11 @@ Rectangle {
 
     // Colored background
     Rectangle {
-        readonly property color color_: Kirigami.Theme.highlightColor
-
         anchors.fill: parent
         radius: height / 2
 
-        color: Qt.rgba(color_.r, color_.g, color_.b, 0.3)
-        border.color: color_
+        color: badgeRect.fillColor
+        border.color: badgeRect.borderColor
         border.width: Screen.devicePixelRatio
     }
 

@@ -35,6 +35,10 @@ MouseArea {
     LayoutMirroring.childrenInherit: (Qt.application.layoutDirection == Qt.RightToLeft)
 
     readonly property var m: model
+    readonly property bool badgeDebugEnabled: appName === "Viber"
+        || appName === "Zen Browser"
+        || appId.toLowerCase() === "viber"
+        || appId.toLowerCase() === "zen"
     
     readonly property int pid: model.AppPid !== undefined ? model.AppPid : 0
     readonly property string appName: model.AppName || ""
@@ -50,10 +54,13 @@ MouseArea {
     property int pressX: -1
     property int pressY: -1
     property bool dragging: false
+    property int attentionBadgeCount: 0
+    property bool lastDemandingAttention: model.IsDemandingAttention === true
     property QtObject contextMenu: null
     property int wheelDelta: 0
     readonly property bool smartLauncherEnabled: !inPopup && model.IsStartup !== true
     property QtObject smartLauncherItem: null
+    readonly property Component smartLauncherItemComponent: Qt.createComponent("taskmanager/SmartLauncherItem.qml")
     property alias toolTipAreaItem: toolTipArea
     property alias audioStreamIconLoaderItem: audioStreamIconLoader
 
@@ -74,6 +81,19 @@ MouseArea {
     readonly property bool muted: hasAudioStream && audioStreams.every(function (item) {
         return item.muted
     })
+    readonly property int effectiveBadgeCount: {
+        if (task.smartLauncherItem && task.smartLauncherItem.countVisible) {
+            return Math.max(task.smartLauncherItem.count, attentionBadgeCount);
+        }
+
+        if (attentionBadgeCount > 0) {
+            return attentionBadgeCount;
+        }
+
+        return model.IsDemandingAttention === true ? 1 : 0;
+    }
+    readonly property bool effectiveBadgeVisible: plasmoid.configuration.notificationBadges === true
+        && effectiveBadgeCount > 0
 
     readonly property bool highlighted: (inPopup && activeFocus) || (!inPopup && containsMouse)
         || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
@@ -218,7 +238,67 @@ MouseArea {
         toolTipArea.hideToolTip();
     }
 
+    function ensureSmartLauncherItem() {
+        if (!smartLauncherEnabled || smartLauncherItem) {
+            return;
+        }
+
+        if (smartLauncherItemComponent.status !== Component.Ready) {
+            console.log("[fancytasks_badge][Task] SmartLauncher component not ready",
+                        "appName=", appName,
+                        "status=", smartLauncherItemComponent.status,
+                        "error=", smartLauncherItemComponent.errorString());
+            return;
+        }
+
+        const smartLauncher = smartLauncherItemComponent.createObject(task);
+        if (!smartLauncher) {
+            console.log("[fancytasks_badge][Task] SmartLauncher createObject failed",
+                        "appName=", appName,
+                        "error=", smartLauncherItemComponent.errorString());
+            return;
+        }
+
+        smartLauncher.launcherUrl = Qt.binding(() => model.LauncherUrlWithoutIcon);
+        smartLauncher.appId = Qt.binding(() => task.appId);
+        smartLauncher.appName = Qt.binding(() => task.appName);
+        smartLauncher.isActiveWindow = Qt.binding(() => model.IsActive === true);
+
+        smartLauncherItem = smartLauncher;
+    }
+
+    function scheduleActiveBadgeReset() {
+        activeBadgeResetTimer.restart();
+    }
+
+    function cancelActiveBadgeReset() {
+        activeBadgeResetTimer.stop();
+    }
+
+    function clearAttentionBadgeState(reason) {
+        attentionBadgeCount = 0;
+        lastDemandingAttention = false;
+        if (badgeDebugEnabled) {
+            console.log("[fancytasks_badge][Task] clearAttentionBadgeState",
+                        "reason=", reason,
+                        "appName=", appName,
+                        "attentionBadgeCount=", attentionBadgeCount,
+                        "lastDemandingAttention=", lastDemandingAttention);
+        }
+    }
+
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
+
+    Timer {
+        id: activeBadgeResetTimer
+        interval: 1500
+        repeat: false
+        onTriggered: {
+            if (model.IsActive === true) {
+                clearAttentionBadgeState("activeTimer");
+            }
+        }
+    }
 
     onPidChanged: updateAudioStreams({delay: false})
     onAppNameChanged: updateAudioStreams({delay: false})
@@ -227,6 +307,9 @@ MouseArea {
         console.log("[fancytasks_rld][Task] onIsWindowChanged; isWindow=", isWindow,
                     "appName=", appName, "itemIndex=", itemIndex,
                     "IsLauncher=", model.IsLauncher, "HasLauncher=", model.HasLauncher);
+        if (!isWindow) {
+            clearAttentionBadgeState("notWindow");
+        }
         if (isWindow) {
             taskInitComponent.createObject(task);
         }
@@ -402,17 +485,7 @@ MouseArea {
     }
 
     onSmartLauncherEnabledChanged: {
-        if (smartLauncherEnabled && !smartLauncherItem) {
-            const smartLauncher = Qt.createQmlObject(`
-                import "taskmanager" as TaskManagerApplet;
-
-                TaskManagerApplet.SmartLauncherItem { }
-            `, task);
-
-            smartLauncher.launcherUrl = Qt.binding(() => model.LauncherUrlWithoutIcon);
-
-            smartLauncherItem = smartLauncher;
-        }
+        ensureSmartLauncherItem();
     }
 
     onHasAudioStreamChanged: {
@@ -426,6 +499,123 @@ MouseArea {
             updateAudioStreams({delay: false});
         } else {
             task.audioStreams = [];
+        }
+    }
+
+    Connections {
+        target: task
+        function onMChanged() {
+            const demandingAttention = model.IsDemandingAttention === true;
+            if (badgeDebugEnabled) {
+                console.log("[fancytasks_badge][Task] onMChanged",
+                            "appName=", appName,
+                            "itemIndex=", itemIndex,
+                            "IsActive=", model.IsActive,
+                            "IsDemandingAttention=", demandingAttention,
+                            "attentionBadgeCount=", attentionBadgeCount,
+                            "lastDemandingAttention=", lastDemandingAttention,
+                            "smartCount=", task.smartLauncherItem ? task.smartLauncherItem.count : -1,
+                            "effectiveBadgeCount=", effectiveBadgeCount);
+            }
+            if (model.IsActive === true) {
+                if (demandingAttention) {
+                    cancelActiveBadgeReset();
+                    lastDemandingAttention = false;
+                    if (badgeDebugEnabled) {
+                        console.log("[fancytasks_badge][Task] activeDemandingAttentionCycle",
+                                    "appName=", appName,
+                                    "attentionBadgeCount=", attentionBadgeCount,
+                                    "lastDemandingAttention=", lastDemandingAttention);
+                    }
+                    return;
+                }
+
+                scheduleActiveBadgeReset();
+                return;
+            }
+
+            cancelActiveBadgeReset();
+
+            if (!demandingAttention) {
+                lastDemandingAttention = false;
+            }
+        }
+    }
+
+    Connections {
+        target: tasksModel
+        function onDataChanged(topLeft, bottomRight) {
+            if (!task.isWindow || itemIndex < topLeft.row || itemIndex > bottomRight.row) {
+                return;
+            }
+
+            if (badgeDebugEnabled) {
+                console.log("[fancytasks_badge][Task] tasksModel.onDataChanged",
+                            "appName=", appName,
+                            "rows=", topLeft.row, "-", bottomRight.row,
+                            "itemIndex=", itemIndex,
+                            "IsActive=", model.IsActive,
+                            "IsDemandingAttention=", model.IsDemandingAttention,
+                            "attentionBadgeCount(before)=", attentionBadgeCount,
+                            "lastDemandingAttention(before)=", lastDemandingAttention,
+                            "smartCount=", task.smartLauncherItem ? task.smartLauncherItem.count : -1,
+                            "effectiveBadgeCount=", effectiveBadgeCount);
+            }
+
+            if (model.IsActive === true) {
+                if (model.IsDemandingAttention === true) {
+                    cancelActiveBadgeReset();
+                    lastDemandingAttention = false;
+                    if (badgeDebugEnabled) {
+                        console.log("[fancytasks_badge][Task] activeDemandingAttentionCycle",
+                                    "appName=", appName,
+                                    "attentionBadgeCount=", attentionBadgeCount,
+                                    "lastDemandingAttention=", lastDemandingAttention);
+                    }
+                    return;
+                }
+
+                scheduleActiveBadgeReset();
+                if (badgeDebugEnabled) {
+                    console.log("[fancytasks_badge][Task] scheduledResetBecauseActive",
+                                "appName=", appName,
+                                "attentionBadgeCount=", attentionBadgeCount,
+                                "lastDemandingAttention=", lastDemandingAttention);
+                }
+                return;
+            }
+
+            cancelActiveBadgeReset();
+
+            const demandingAttention = model.IsDemandingAttention === true;
+            if (!demandingAttention) {
+                lastDemandingAttention = false;
+                if (badgeDebugEnabled) {
+                    console.log("[fancytasks_badge][Task] clearDemandingAttention",
+                                "appName=", appName,
+                                "attentionBadgeCount=", attentionBadgeCount,
+                                "lastDemandingAttention=", lastDemandingAttention);
+                }
+                return;
+            }
+
+            if (lastDemandingAttention) {
+                if (badgeDebugEnabled) {
+                    console.log("[fancytasks_badge][Task] ignoredRepeatedDemandingAttention",
+                                "appName=", appName,
+                                "attentionBadgeCount=", attentionBadgeCount);
+                }
+                return;
+            }
+
+            lastDemandingAttention = true;
+            attentionBadgeCount++;
+            if (badgeDebugEnabled) {
+                console.log("[fancytasks_badge][Task] incrementAttentionBadgeCount",
+                            "appName=", appName,
+                            "attentionBadgeCount=", attentionBadgeCount,
+                            "effectiveBadgeCount=", effectiveBadgeCount);
+            }
         }
     }
 
@@ -922,8 +1112,8 @@ MouseArea {
             mainItem.isOnAllVirtualDesktopsParent = Qt.binding(() => model.IsOnAllVirtualDesktops === true);
             mainItem.activitiesParent = Qt.binding(() => model.Activities);
 
-            mainItem.smartLauncherCountVisible = Qt.binding(() => task.smartLauncherItem && task.smartLauncherItem.countVisible);
-            mainItem.smartLauncherCount = Qt.binding(() => mainItem.smartLauncherCountVisible ? task.smartLauncherItem.count : 0);
+            mainItem.smartLauncherCountVisible = Qt.binding(() => task.effectiveBadgeVisible);
+            mainItem.smartLauncherCount = Qt.binding(() => task.effectiveBadgeCount);
         }
     }
 
@@ -1068,6 +1258,42 @@ MouseArea {
                 id: iconImage
                 anchors.fill: parent
                 source: model.decoration
+            }
+
+            Item {
+                id: directBadgeOverlay
+                visible: task.effectiveBadgeVisible
+                z: 10000
+                width: badgeBubble.width
+                height: badgeBubble.height
+                anchors.right: parent.right
+                anchors.top: parent.top
+
+                Rectangle {
+                    id: badgeBubble
+                    readonly property int minimumSize: Math.max(Kirigami.Units.gridUnit, Kirigami.Units.iconSizes.small / 2)
+                    width: Math.max(minimumSize, Math.round(icon.width * 0.34))
+                    height: width
+                    radius: width / 2
+                    color: "#ff1f1f"
+                    border.color: "#ffffff"
+                    border.width: Math.max(1, Math.round(Kirigami.Units.devicePixelRatio))
+
+                    Text {
+                        anchors.centerIn: parent
+                        width: parent.width
+                        height: parent.height
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: "#ffffff"
+                        font.bold: true
+                        font.pixelSize: Math.max(Kirigami.Theme.smallFont.pixelSize, Math.round(parent.height * 0.5))
+                        text: {
+                            const count = task.effectiveBadgeCount;
+                            return count > 99 ? "99+" : count.toString();
+                        }
+                    }
+                }
             }
 
             // Move Behaviors into the transform components to avoid invalid external references
@@ -1346,16 +1572,10 @@ MouseArea {
         }
 
         Loader {
-            // QTBUG anchors.fill in conjunction with the Loader doesn't reliably work on creation:
-            // have a window with a badge, move it from one screen to another, the new task item on the
-            // other screen will now have a glitched out badge mask.
-                width: icon.width
-                height: icon.height
-            anchors.centerIn: icon
-            asynchronous: true
-            source: "TaskBadgeOverlay.qml"
-            active: height >= Kirigami.Units.iconSizes.small
-                    && task.smartLauncherItem && task.smartLauncherItem.countVisible
+            width: 0
+            height: 0
+            active: false
+            visible: false
         }
 
         states: [
@@ -1582,6 +1802,11 @@ MouseArea {
     ]
 
     Component.onCompleted: {
+        ensureSmartLauncherItem();
+        if (model.IsActive === true) {
+            scheduleActiveBadgeReset();
+        }
+
         if (!inPopup && model.IsWindow === true) {
             if(plasmoid.configuration.groupIconEnabled){
                 var component = Qt.createComponent("GroupExpanderOverlay.qml");
