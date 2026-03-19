@@ -37,8 +37,8 @@ ConfigPage {
     property bool cfg_hoverBounce
     property bool cfg_hoverEffectsEnabled
     property int cfg_hoverEffectMode
-    property alias cfg_floatingIconShadow: floatingIconShadow.checked
-    property alias cfg_floatingIconShadowType: floatingIconShadowType.currentIndex
+    property bool cfg_floatingIconShadow
+    property int cfg_floatingIconShadowType
 
     property alias cfg_buttonColorize: buttonColorize.checked
     property alias cfg_buttonColorizeInactive: buttonColorizeInactive.checked
@@ -49,6 +49,47 @@ ConfigPage {
     property alias cfg_disableButtonInactiveSvg: disableButtonInactiveSvg.checked
     property alias cfg_overridePlasmaButtonDirection: overridePlasmaButtonDirection.checked
     property alias cfg_plasmaButtonDirection: plasmaButtonDirection.currentIndex
+
+    function hoverEffectsCurrentIndex() {
+        if (!cfg_hoverEffectsEnabled && !cfg_hoverBounce) {
+            return 0;
+        }
+
+        return Number(cfg_hoverEffectMode || 0) === 1 ? 2 : 1;
+    }
+
+    function applyHoverEffectsSelection(index) {
+        switch (index) {
+        case 0:
+            cfg_hoverEffectsEnabled = false
+            cfg_hoverEffectMode = 0
+            cfg_hoverBounce = false
+            break
+        case 1:
+            cfg_hoverEffectsEnabled = true
+            cfg_hoverEffectMode = 0
+            cfg_hoverBounce = true
+            break
+        case 2:
+            cfg_hoverEffectsEnabled = true
+            cfg_hoverEffectMode = 1
+            cfg_hoverBounce = false
+            break
+        }
+    }
+
+    function iconShadowCurrentIndex() {
+        if (!cfg_floatingIconShadow) {
+            return 0;
+        }
+
+        return Number(cfg_floatingIconShadowType || 0) + 1;
+    }
+
+    function applyIconShadowSelection(index) {
+        cfg_floatingIconShadow = index > 0
+        cfg_floatingIconShadowType = Math.max(0, index - 1)
+    }
 
 Kirigami.FormLayout {
     anchors.left: parent.left
@@ -94,46 +135,25 @@ Kirigami.FormLayout {
         text: i18n("Show window preview for minimized windows")
     }
 
-    CheckBox {
-        id: hoverEffectsEnabled
-        text: i18n("Hover effects")
-        checked: cfg_hoverEffectsEnabled
-        onCheckedChanged: {
-            cfg_hoverEffectsEnabled = checked
-            if (!checked) {
-                cfg_hoverBounce = false
-            }
-        }
-
-        Component.onCompleted: {
-            if (!cfg_hoverEffectsEnabled && cfg_hoverBounce) {
-                cfg_hoverEffectsEnabled = true
-            }
-        }
-    }
-
     ComboBox {
-        id: hoverEffectMode
-        Kirigami.FormData.label: i18n("Hover effect type:")
-        enabled: hoverEffectsEnabled.checked
-        currentIndex: cfg_hoverEffectMode
-        onActivated: cfg_hoverEffectMode = currentIndex
+        id: hoverEffects
+        Kirigami.FormData.label: i18n("Hover Effects:")
+        currentIndex: hoverEffectsCurrentIndex()
+        onActivated: applyHoverEffectsSelection(currentIndex)
         model: [
+            i18n("Frame"),
             i18n("Bounce"),
             i18n("Magnifying Glass")
         ]
     }
 
-    CheckBox {
-        id: floatingIconShadow
-        text: i18n("Show floating icon shadow")
-    }
-
     ComboBox {
-        id: floatingIconShadowType
-        Kirigami.FormData.label: i18n("Shadow type:")
-        enabled: floatingIconShadow.checked
+        id: iconShadowType
+        Kirigami.FormData.label: i18n("Icon Shadow type:")
+        currentIndex: iconShadowCurrentIndex()
+        onActivated: applyIconShadowSelection(currentIndex)
         model: [
+            i18n("Off"),
             i18n("Drop shadow"),
             i18n("Material shadow"),
             i18n("Glow")
