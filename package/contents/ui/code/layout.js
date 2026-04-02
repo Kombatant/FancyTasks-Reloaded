@@ -253,7 +253,19 @@ function launcherIconWidth(baseWidth) {
     return iconWidth * (plasmoid.configuration.iconScale / 100);
 }
 
+function canLayout(container) {
+    return !!container
+        && taskList.width > 0
+        && taskList.height > 0
+        && tasks.width > 0
+        && tasks.height > 0;
+}
+
 function layout(container) {
+    if (!canLayout(container)) {
+        return;
+    }
+
     var item;
     var stripes = calculateStripes();
     var taskCount = tasksModel.count - tasksModel.logicalLauncherCount;

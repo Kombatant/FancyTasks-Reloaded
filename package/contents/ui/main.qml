@@ -241,7 +241,7 @@ PlasmoidItem {
         }
 
         if (!containsMouse && needLayoutRefresh) {
-            LayoutManager.layout(taskRepeater)
+            taskList.layout()
             needLayoutRefresh = false;
         }
     }
@@ -663,8 +663,8 @@ PlasmoidItem {
             top: parent.top
         }
 
-        onWidthChanged: LayoutManager.layout(taskRepeater)
-        onHeightChanged: LayoutManager.layout(taskRepeater)
+        onWidthChanged: layoutTimer.restart()
+        onHeightChanged: layoutTimer.restart()
 
         flow: {
             if (tasks.vertical) {
@@ -683,8 +683,10 @@ PlasmoidItem {
             console.log("[fancytasks_rld] taskList.layout() called");
             taskList.width = LayoutManager.layoutWidth();
             taskList.height = LayoutManager.layoutHeight();
+            if (!LayoutManager.canLayout(taskRepeater)) {
+                return;
+            }
             LayoutManager.layout(taskRepeater);
-            LayoutManager
         }
 
         Timer {
@@ -705,12 +707,12 @@ PlasmoidItem {
             delegate: Task {
                 readonly property bool isSubTask: false
             }
-            onItemAdded: {
+            onItemAdded: function(index, item) {
                 console.log("[fancytasks_rld] Repeater.onItemAdded; index=", index);
                 taskList.layout()
 
             }
-            onItemRemoved: {
+            onItemRemoved: function(index, item) {
                 if (tasks.containsMouse && index != taskRepeater.count &&
                     item.winIdList && item.winIdList.length > 0 &&
                     taskClosedWithMouseMiddleButton.indexOf(item.winIdList[0]) > -1) {
