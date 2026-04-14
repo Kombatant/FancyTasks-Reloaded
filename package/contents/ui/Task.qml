@@ -1255,9 +1255,22 @@ MouseArea {
         Item {
             id: icon
             anchors.centerIn: parent
+            // Shift the icon down slightly to compensate for the drop shadow's downward visual
+            // weight, which otherwise makes the icon appear to float above its geometric centre.
+            readonly property int shadowVerticalShift: {
+                if (!plasmoid.configuration.floatingIconShadow) return 0;
+                switch (task.iconShadowType) {
+                case 0: return 1;
+                case 1: return 2;
+                default: return 0;
+                }
+            }
             // Keep a small gap so a large icon does not visually collide with the indicator
-            // without changing the preview container geometry.
-            readonly property int indicatorGap: indicator.visible ? Math.max(2, Math.round(Kirigami.Units.smallSpacing / 2)) : 0
+            // without changing the preview container geometry.  The shadow shift is added here
+            // so the icon can move down without visually touching the indicator.
+            readonly property int indicatorGap: indicator.visible
+                ? Math.max(2, Math.round(Kirigami.Units.smallSpacing / 2)) + shadowVerticalShift
+                : 0
             readonly property int leftIndicatorReserve: indicator.visible && indicator.state === "left"
                 ? indicator.effectiveThickness + plasmoid.configuration.indicatorEdgeOffset + indicatorGap
                 : 0
@@ -1270,8 +1283,14 @@ MouseArea {
             readonly property int bottomIndicatorReserve: indicator.visible && indicator.state === "bottom"
                 ? indicator.effectiveThickness + plasmoid.configuration.indicatorEdgeOffset + indicatorGap
                 : 0
+            readonly property int baseAvailableWidth: Math.max(1, parent.width - leftIndicatorReserve - rightIndicatorReserve)
+            readonly property int baseAvailableHeight: Math.max(1, parent.height - topIndicatorReserve - bottomIndicatorReserve)
+            readonly property int framePadding: task.showStaticIconFrame
+                ? Math.max(8, Math.round(Math.min(baseAvailableWidth, baseAvailableHeight) * 0.18))
+                : 0
+            readonly property int framePaddingHalf: Math.round(framePadding / 2)
             anchors.horizontalCenterOffset: Math.round((leftIndicatorReserve - rightIndicatorReserve) / 2)
-            anchors.verticalCenterOffset: Math.round((topIndicatorReserve - bottomIndicatorReserve) / 2)
+            anchors.verticalCenterOffset: Math.round((topIndicatorReserve - bottomIndicatorReserve) / 2) + shadowVerticalShift
             readonly property bool groupedFrameStackVisible: task.showStaticIconFrame
                 && model.IsGroupParent === true
             readonly property real groupedFrameStackOffset: Math.max(3, Math.round(Math.min(width, height) * 0.13))
@@ -1301,8 +1320,8 @@ MouseArea {
             }
 
             width: {
-                const availableWidth = Math.max(1, parent.width - leftIndicatorReserve - rightIndicatorReserve)
-                const availableHeight = Math.max(1, parent.height - topIndicatorReserve - bottomIndicatorReserve)
+                const availableWidth = Math.max(1, baseAvailableWidth - framePadding)
+                const availableHeight = Math.max(1, baseAvailableHeight - framePadding)
                 let isWider = availableWidth > availableHeight
                 if(iconsOnly && !plasmoid.configuration.iconSizeOverride){
                     return isWider ? availableHeight * (plasmoid.configuration.iconScale / 100) : availableWidth * (plasmoid.configuration.iconScale / 100)
@@ -1323,9 +1342,8 @@ MouseArea {
                 delegate: Rectangle {
                     readonly property int stackDepth: index + 1
 
-                    anchors.centerIn: icon
-                    anchors.horizontalCenterOffset: icon.groupedFrameOffset("x", stackDepth)
-                    anchors.verticalCenterOffset: icon.groupedFrameOffset("y", stackDepth)
+                    x: iconFrameOverlay.x + icon.groupedFrameOffset("x", stackDepth)
+                    y: iconFrameOverlay.y + icon.groupedFrameOffset("y", stackDepth)
                     width: iconFrameOverlay.width
                     height: iconFrameOverlay.height
                     radius: iconFrameOverlay.radius
@@ -1344,9 +1362,12 @@ MouseArea {
 
             Rectangle {
                 id: iconFrameOverlay
-                anchors.centerIn: parent
-                width: Math.min(icon.width, parent.width) + Math.max(8, Math.round(icon.width * 0.22))
-                height: Math.min(icon.height, parent.height) + Math.max(8, Math.round(icon.height * 0.22))
+                // Build the frame from the icon's actual box so the icon stays centred inside it
+                // and the added indicator reserve expands outward instead of shifting the frame.
+                x: -icon.leftIndicatorReserve - icon.framePaddingHalf
+                y: -icon.topIndicatorReserve - icon.framePaddingHalf - icon.shadowVerticalShift
+                width: icon.width + icon.leftIndicatorReserve + icon.rightIndicatorReserve + icon.framePadding
+                height: icon.height + icon.topIndicatorReserve + icon.bottomIndicatorReserve + icon.framePadding
                 radius: Math.round(Math.min(width, height) * 0.28)
                 color: task.iconFrameFillColor()
                 border.width: task.darkPanel
@@ -1539,8 +1560,8 @@ MouseArea {
             Rectangle {
                 id: previewFrameOverlay
                 anchors.centerIn: parent
-                width: minimizedPreview.width + Math.max(8, Math.round(minimizedPreview.width * 0.22))
-                height: minimizedPreview.height + Math.max(8, Math.round(minimizedPreview.height * 0.22))
+                width: minimizedPreview.width + icon.framePadding
+                height: minimizedPreview.height + icon.framePadding
                 radius: Math.round(Math.min(width, height) * 0.28)
                 color: task.iconFrameFillColor()
                 border.width: task.darkPanel
