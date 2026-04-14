@@ -1556,6 +1556,7 @@ MouseArea {
                                                 && resolvedWinUuid.length > 0
             readonly property real previewInset: Math.max(2, Math.round(Math.min(width, height) * 0.08))
             readonly property real previewExtent: Math.max(0, Math.min(width, height) - (previewInset * 2))
+            // Size of the minimize icon badge in relation to the icon
             readonly property real badgeSize: previewExtent * 0.5
             readonly property real badgePadding: Math.max(2, Math.round(badgeSize * 0.16))
             property double lastHeartbeat: 0
