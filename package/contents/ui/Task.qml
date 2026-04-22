@@ -134,12 +134,15 @@ MouseArea {
     readonly property real hoverMaxPanelThicknessExtra: hoverEffectsEnabled && hoverEffectMode === 1 && !inPopup && icon
         ? hoverPanelThicknessExtraForProgress(icon, 1)
         : 0
-    readonly property bool iconFrameModeEnabled: !hoverEffectsEnabled
+    readonly property bool demandsAttention: model.IsDemandingAttention === true || (task.smartLauncherItem && task.smartLauncherItem.urgent)
+    readonly property color attentionHighlightColor: "#ff1f1f"
+    readonly property bool iconFrameModeEnabled: !hoverEffectsEnabled || demandsAttention
     readonly property bool iconFrameHovered: !inPopup && containsMouse
     readonly property bool iconFrameActive: !inPopup && model.IsActive === true
-    readonly property bool iconFrameVisible: iconFrameModeEnabled && (iconFrameHovered || iconFrameActive)
+    readonly property bool iconFrameAttention: demandsAttention
+    readonly property bool iconFrameVisible: iconFrameModeEnabled && (iconFrameHovered || iconFrameActive || iconFrameAttention)
     readonly property bool showStaticIconFrame: iconFrameModeEnabled && iconFrameVisible
-    readonly property color iconFrameAccentColor: Kirigami.Theme.highlightColor
+    readonly property color iconFrameAccentColor: iconFrameAttention ? attentionHighlightColor : Kirigami.Theme.highlightColor
     readonly property bool darkPanel: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor)
         === Kirigami.ColorUtils.Dark
     z: hoverEffectsEnabled ? Math.round((hoverBounceEnabled ? 1 : hoverMagnifyProgress) * 100) : 0
@@ -150,6 +153,10 @@ MouseArea {
         const hoverAndActiveAlpha = task.darkPanel ? 0.30 : 0.24;
         const activeAlpha = task.darkPanel ? 0.22 : 0.17;
         const hoverAlpha = task.darkPanel ? 0.14 : 0.11;
+
+        if (task.iconFrameAttention) {
+            return Qt.rgba(accent.r, accent.g, accent.b, (task.darkPanel ? 0.30 : 0.24) * scale);
+        }
 
         if (task.iconFrameHovered && task.iconFrameActive) {
             return Qt.rgba(accent.r, accent.g, accent.b, hoverAndActiveAlpha * scale);
@@ -169,6 +176,10 @@ MouseArea {
         const activeAlpha = task.darkPanel ? 0.88 : 0.84;
         const hoverAlpha = task.darkPanel ? 0.72 : 0.68;
 
+        if (task.iconFrameAttention) {
+            return Qt.rgba(accent.r, accent.g, accent.b, (task.darkPanel ? 1.0 : 0.98) * scale);
+        }
+
         if (task.iconFrameHovered && task.iconFrameActive) {
             return Qt.rgba(accent.r, accent.g, accent.b, hoverAndActiveAlpha * scale);
         }
@@ -183,6 +194,10 @@ MouseArea {
     function iconFrameGlowColor(alphaScale) {
         const accent = task.iconFrameAccentColor;
         const scale = alphaScale === undefined ? 1 : alphaScale;
+
+        if (task.iconFrameAttention) {
+            return Qt.rgba(accent.r, accent.g, accent.b, (task.darkPanel ? 0.40 : 0.24) * scale);
+        }
 
         if (task.iconFrameHovered && task.iconFrameActive) {
             return Qt.rgba(accent.r, accent.g, accent.b, (task.darkPanel ? 0.40 : 0.24) * scale);
@@ -1862,16 +1877,16 @@ MouseArea {
         },
         State {
             name: "attention"
-            when: model.IsDemandingAttention === true || (task.smartLauncherItem && task.smartLauncherItem.urgent)
+            when: task.demandsAttention
 
             PropertyChanges {
                 target: frame
-                basePrefix: "attention"
-                visible: (plasmoid.configuration.buttonColorize && !frame.isHovered) || !plasmoid.configuration.buttonColorize
+                basePrefix: "normal"
+                visible: false
             }
             PropertyChanges { 
                 target: colorOverride
-                visible: (plasmoid.configuration.buttonColorize && frame.isHovered)
+                visible: false
             }
         },
         State {
@@ -1963,7 +1978,7 @@ MouseArea {
         State {
             name: "hover"
             when: frame.isHovered
-                && !(model.IsDemandingAttention === true || (task.smartLauncherItem && task.smartLauncherItem.urgent))
+                && !task.demandsAttention
             PropertyChanges { 
                 target: colorOverride
                 visible: plasmoid.configuration.buttonColorize ? true : false
