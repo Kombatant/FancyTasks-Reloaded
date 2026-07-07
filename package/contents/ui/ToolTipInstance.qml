@@ -116,18 +116,22 @@ ColumnLayout {
             }
         }
 
-        // Count badge.
-        // The badge itself is inside an item to better center the text in the bubble
+        // Unread indicator dot. Numberless on purpose: coalesced/replaced
+        // notifications make an exact count unreliable.
         Item {
             Layout.alignment: Qt.AlignRight | Qt.AlignTop
             Layout.preferredHeight: closeButton.height
             Layout.preferredWidth: closeButton.width
             visible: flatIndex === 0 && smartLauncherCountVisible
 
-            Badge {
+            Rectangle {
                 anchors.centerIn: parent
-                height: Kirigami.Units.iconSizes.smallMedium
-                number: smartLauncherCount
+                width: Math.round(Kirigami.Units.iconSizes.smallMedium / 2)
+                height: width
+                radius: width / 2
+                color: "#ff1f1f"
+                border.color: "#ffffff"
+                border.width: Math.max(1, Math.round(Kirigami.Units.devicePixelRatio))
             }
         }
 

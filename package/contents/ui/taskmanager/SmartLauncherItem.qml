@@ -14,15 +14,13 @@ Item {
     property string appName: ""
     property bool isActiveWindow: false
     property int revision: 0
-    property int syntheticIdCounter: 0
-    property var liveNotificationIds: ({})
-    property int eventUnreadCount: 0
+    // Notifications older than this are considered "seen"; bumped when the
+    // task's window becomes active so the badge clears on activation.
+    property double lastClearedTime: 0
     readonly property var taskAliases: aliasesForTask()
     readonly property int count: {
         revision;
-        const unread = unreadCount();
-        const live = liveNotificationCount();
-        return Math.max(unread, live, eventUnreadCount);
+        return unreadCount();
     }
     readonly property bool countVisible: count > 0
     property bool urgent: countVisible
@@ -33,7 +31,10 @@ Item {
         id: notificationsModel
         showNotifications: true
         showJobs: false
-        showExpired: false
+        // Expired notifications (popup timed out) must stay countable —
+        // otherwise the badge would silently drop even though the user
+        // never saw or dismissed the notification.
+        showExpired: true
         showDismissed: false
         groupMode: NotificationManager.Notifications.GroupDisabled
         sortMode: NotificationManager.Notifications.SortByDate
@@ -43,28 +44,11 @@ Item {
         target: notificationsModel
         function onCountChanged() { smartLauncher.revision++; }
         function onDataChanged() { smartLauncher.revision++; }
-        function onRowsInserted(parent, first, last) {
-            smartLauncher.recordInsertedNotifications(first, last);
-            smartLauncher.revision++;
-        }
+        function onRowsInserted() { smartLauncher.revision++; }
         function onRowsRemoved() { smartLauncher.revision++; }
         function onModelReset() { smartLauncher.revision++; }
         function onUnreadNotificationsCountChanged() { smartLauncher.revision++; }
         function onLastReadChanged() { smartLauncher.revision++; }
-    }
-
-    Connections {
-        target: NotificationManager.Server
-        function onNotificationAdded(notification) {
-            smartLauncher.trackLiveNotification(notification);
-        }
-        function onNotificationReplaced(replacedId, notification) {
-            smartLauncher.untrackLiveNotification(replacedId);
-            smartLauncher.trackLiveNotification(notification);
-        }
-        function onNotificationRemoved(id) {
-            smartLauncher.untrackLiveNotification(id);
-        }
     }
 
     onLauncherUrlChanged: revision++
@@ -72,8 +56,7 @@ Item {
     onAppNameChanged: revision++
     onIsActiveWindowChanged: {
         if (isActiveWindow) {
-            liveNotificationIds = ({});
-            eventUnreadCount = 0;
+            lastClearedTime = Date.now();
             revision++;
         }
     }
@@ -127,22 +110,33 @@ Item {
         add(key);
         add(key.replace(/[^a-z0-9]/g, ""));
 
+        // Reverse-DNS ids ("org.kde.dolphin") also match on their last
+        // component. Dash/underscore tails are deliberately NOT used: they
+        // produce generic words ("browser", "manager") that cross-match
+        // unrelated applications.
         const dottedParts = key.split(".");
         if (dottedParts.length > 1) {
             add(dottedParts[dottedParts.length - 1]);
         }
 
-        const dashedParts = key.split("-");
-        if (dashedParts.length > 1) {
-            add(dashedParts[dashedParts.length - 1]);
-        }
-
-        const underscoredParts = key.split("_");
-        if (underscoredParts.length > 1) {
-            add(underscoredParts[underscoredParts.length - 1]);
-        }
-
         return aliases;
+    }
+
+    function keyLooksLikeZen(key) {
+        if (!key) {
+            return false;
+        }
+
+        if (key === "zen" || key === "zen-browser" || key === "zenbrowser") {
+            return true;
+        }
+
+        if (key.indexOf("zen_browser") !== -1 || key.indexOf("zen-browser") !== -1) {
+            return true;
+        }
+
+        const dottedParts = key.split(".");
+        return dottedParts[dottedParts.length - 1] === "zen";
     }
 
     function aliasesForTask() {
@@ -161,12 +155,9 @@ Item {
         addAll(aliasesForValue(appId));
         addAll(aliasesForValue(appName));
 
-        const normalizedAppName = normalizeKey(appName);
-        const normalizedAppId = normalizeKey(appId);
-        const normalizedLauncher = normalizeKey(launcherUrl);
-        const looksLikeZen = normalizedAppName.indexOf("zen") !== -1
-            || normalizedAppId.indexOf("zen") !== -1
-            || normalizedLauncher.indexOf("zen") !== -1;
+        const looksLikeZen = keyLooksLikeZen(normalizeKey(appName))
+            || keyLooksLikeZen(normalizeKey(appId))
+            || keyLooksLikeZen(normalizeKey(launcherUrl));
 
         if (looksLikeZen) {
             addAll(aliasesForValue("firefox"));
@@ -175,46 +166,6 @@ Item {
         }
 
         return aliases;
-    }
-
-    function aliasesForNotification(notification) {
-        const aliases = [];
-
-        function addAll(values) {
-            for (let i = 0; i < values.length; ++i) {
-                const value = values[i];
-                if (value && aliases.indexOf(value) === -1) {
-                    aliases.push(value);
-                }
-            }
-        }
-
-        if (!notification) {
-            return aliases;
-        }
-
-        addAll(aliasesForValue(notification.desktopEntry));
-        addAll(aliasesForValue(notification.applicationName));
-        addAll(aliasesForValue(notification.applicationIconName));
-
-        return aliases;
-    }
-
-    function notificationObjectId(notification) {
-        if (!notification) {
-            return 0;
-        }
-
-        if (notification.id !== undefined && notification.id !== null) {
-            return Number(notification.id);
-        }
-
-        if (notification.notificationId !== undefined && notification.notificationId !== null) {
-            return Number(notification.notificationId);
-        }
-
-        syntheticIdCounter++;
-        return -syntheticIdCounter;
     }
 
     function matchesAliases(candidateAliases) {
@@ -229,40 +180,6 @@ Item {
         }
 
         return false;
-    }
-
-    function trackLiveNotification(notification) {
-        const notificationAliases = aliasesForNotification(notification);
-        if (!matchesAliases(notificationAliases)) {
-            return;
-        }
-
-        const id = notificationObjectId(notification);
-        if (!id) {
-            return;
-        }
-
-        const updated = Object.assign({}, liveNotificationIds);
-        updated[String(id)] = true;
-        liveNotificationIds = updated;
-        eventUnreadCount++;
-        revision++;
-    }
-
-    function untrackLiveNotification(id) {
-        const key = String(id);
-        if (!liveNotificationIds[key]) {
-            return;
-        }
-
-        const updated = Object.assign({}, liveNotificationIds);
-        delete updated[key];
-        liveNotificationIds = updated;
-        revision++;
-    }
-
-    function liveNotificationCount() {
-        return Object.keys(liveNotificationIds).length;
     }
 
     function notificationMatches(index) {
@@ -280,6 +197,20 @@ Item {
             || matchesAliases(originNameAliases);
     }
 
+    function notificationTimestamp(index) {
+        const updated = notificationsModel.data(index, NotificationManager.Notifications.UpdatedRole);
+        if (updated && !isNaN(updated.getTime()) && updated.getTime() > 0) {
+            return updated.getTime();
+        }
+
+        const created = notificationsModel.data(index, NotificationManager.Notifications.CreatedRole);
+        if (created && !isNaN(created.getTime())) {
+            return created.getTime();
+        }
+
+        return 0;
+    }
+
     function notificationIsUnread(index) {
         if (notificationsModel.data(index, NotificationManager.Notifications.TypeRole)
                 !== NotificationManager.Notifications.NotificationType) {
@@ -287,39 +218,11 @@ Item {
         }
 
         if (notificationsModel.data(index, NotificationManager.Notifications.ReadRole)
-                || notificationsModel.data(index, NotificationManager.Notifications.ExpiredRole)
                 || notificationsModel.data(index, NotificationManager.Notifications.DismissedRole)) {
             return false;
         }
 
-        return true;
-    }
-
-    function recordInsertedNotifications(first, last) {
-        if (taskAliases.length === 0) {
-            return;
-        }
-
-        let matched = 0;
-
-        for (let row = first; row <= last; ++row) {
-            const index = notificationsModel.index(row, 0);
-            if (!notificationIsUnread(index)) {
-                continue;
-            }
-
-            if (!notificationMatches(index)) {
-                continue;
-            }
-
-            matched++;
-        }
-
-        if (matched <= 0) {
-            return;
-        }
-
-        eventUnreadCount += matched;
+        return notificationTimestamp(index) > lastClearedTime;
     }
 
     function unreadCount() {

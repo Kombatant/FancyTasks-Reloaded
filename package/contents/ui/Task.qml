@@ -63,8 +63,6 @@ MouseArea {
     property int pressX: -1
     property int pressY: -1
     property bool dragging: false
-    property int attentionBadgeCount: 0
-    property bool lastDemandingAttention: model.IsDemandingAttention === true
     property QtObject contextMenu: null
     property int wheelDelta: 0
     readonly property bool smartLauncherEnabled: !inPopup && model.IsStartup !== true
@@ -90,17 +88,13 @@ MouseArea {
     readonly property bool muted: hasAudioStream && audioStreams.every(function (item) {
         return item.muted
     })
-    readonly property int effectiveBadgeCount: {
-        if (task.smartLauncherItem && task.smartLauncherItem.countVisible) {
-            return Math.max(task.smartLauncherItem.count, attentionBadgeCount);
-        }
-
-        if (attentionBadgeCount > 0) {
-            return attentionBadgeCount;
-        }
-
-        return model.IsDemandingAttention === true ? 1 : 0;
-    }
+    // The badge only ever shows real notification counts. Window urgency
+    // (IsDemandingAttention) is not a notification — it fires for focus
+    // stealing prevention, modal dialogs etc. — so it must not synthesize
+    // a count; it only drives the attention highlight.
+    readonly property int effectiveBadgeCount: task.smartLauncherItem && task.smartLauncherItem.countVisible
+        ? task.smartLauncherItem.count
+        : 0
     readonly property bool effectiveBadgeVisible: plasmoid.configuration.notificationBadges === true
         && effectiveBadgeCount > 0
 
@@ -352,39 +346,12 @@ MouseArea {
         smartLauncherItem = smartLauncher;
     }
 
-    function scheduleActiveBadgeReset() {
-        activeBadgeResetTimer.restart();
-    }
-
-    function cancelActiveBadgeReset() {
-        activeBadgeResetTimer.stop();
-    }
-
-    function clearAttentionBadgeState(reason) {
-        attentionBadgeCount = 0;
-        lastDemandingAttention = false;
-    }
-
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
-
-    Timer {
-        id: activeBadgeResetTimer
-        interval: 1500
-        repeat: false
-        onTriggered: {
-            if (model.IsActive === true) {
-                clearAttentionBadgeState("activeTimer");
-            }
-        }
-    }
 
     onPidChanged: updateAudioStreams({delay: false})
     onAppNameChanged: updateAudioStreams({delay: false})
 
     onIsWindowChanged: {
-        if (!isWindow) {
-            clearAttentionBadgeState("notWindow");
-        }
         if (isWindow) {
             taskInitComponent.createObject(task);
         }
@@ -570,64 +537,6 @@ MouseArea {
             updateAudioStreams({delay: false});
         } else {
             task.audioStreams = [];
-        }
-    }
-
-    Connections {
-        target: task
-        function onMChanged() {
-            const demandingAttention = model.IsDemandingAttention === true;
-            if (model.IsActive === true) {
-                if (demandingAttention) {
-                    cancelActiveBadgeReset();
-                    lastDemandingAttention = false;
-                    return;
-                }
-
-                scheduleActiveBadgeReset();
-                return;
-            }
-
-            cancelActiveBadgeReset();
-
-            if (!demandingAttention) {
-                lastDemandingAttention = false;
-            }
-        }
-    }
-
-    Connections {
-        target: tasksModel
-        function onDataChanged(topLeft, bottomRight) {
-            if (!task.isWindow || itemIndex < topLeft.row || itemIndex > bottomRight.row) {
-                return;
-            }
-
-            if (model.IsActive === true) {
-                if (model.IsDemandingAttention === true) {
-                    cancelActiveBadgeReset();
-                    lastDemandingAttention = false;
-                    return;
-                }
-
-                scheduleActiveBadgeReset();
-                return;
-            }
-
-            cancelActiveBadgeReset();
-
-            const demandingAttention = model.IsDemandingAttention === true;
-            if (!demandingAttention) {
-                lastDemandingAttention = false;
-                return;
-            }
-
-            if (lastDemandingAttention) {
-                return;
-            }
-
-            lastDemandingAttention = true;
-            attentionBadgeCount++;
         }
     }
 
@@ -1419,30 +1328,18 @@ MouseArea {
                 anchors.right: parent.right
                 anchors.top: parent.top
 
+                // Plain dot, no number: notification coalescing/replacement means
+                // the count can't reliably reflect the number of unseen messages,
+                // so the badge only signals "unread notifications exist".
                 Rectangle {
                     id: badgeBubble
-                    readonly property int minimumSize: Math.max(Kirigami.Units.gridUnit, Kirigami.Units.iconSizes.small / 2)
-                    width: Math.max(minimumSize, Math.round(icon.width * 0.34))
+                    readonly property int minimumSize: Math.max(Math.round(Kirigami.Units.gridUnit / 2), Math.round(Kirigami.Units.iconSizes.small / 3))
+                    width: Math.max(minimumSize, Math.round(icon.width * 0.22))
                     height: width
                     radius: width / 2
                     color: "#ff1f1f"
                     border.color: "#ffffff"
                     border.width: Math.max(1, Math.round(Kirigami.Units.devicePixelRatio))
-
-                    Text {
-                        anchors.centerIn: parent
-                        width: parent.width
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        color: "#ffffff"
-                        font.bold: true
-                        font.pixelSize: Math.max(Kirigami.Theme.smallFont.pixelSize, Math.round(parent.height * 0.5))
-                        text: {
-                            const count = task.effectiveBadgeCount;
-                            return count > 99 ? "99+" : count.toString();
-                        }
-                    }
                 }
             }
 
@@ -1996,9 +1893,6 @@ MouseArea {
 
     Component.onCompleted: {
         ensureSmartLauncherItem();
-        if (model.IsActive === true) {
-            scheduleActiveBadgeReset();
-        }
 
         if (!inPopup && model.IsWindow === true) {
             if(plasmoid.configuration.groupIconEnabled){
