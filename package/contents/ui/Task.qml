@@ -1162,8 +1162,8 @@ MouseArea {
             }
 
             width: {
-                const availableWidth = Math.max(1, baseAvailableWidth - framePadding)
-                const availableHeight = Math.max(1, baseAvailableHeight - framePadding)
+                const availableWidth = Math.max(1, baseAvailableWidth)
+                const availableHeight = Math.max(1, baseAvailableHeight)
                 let isWider = availableWidth > availableHeight
                 if(iconsOnly && !plasmoid.configuration.iconSizeOverride){
                     return isWider ? availableHeight * (plasmoid.configuration.iconScale / 100) : availableWidth * (plasmoid.configuration.iconScale / 100)

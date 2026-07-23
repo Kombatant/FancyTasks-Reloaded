@@ -6,10 +6,23 @@ PACKAGE_ID="org.kombatant.fancytasks_rld"
 PACKAGE_PATH="$SCRIPT_DIR/package"
 LOCAL_PACKAGE_DIR="$HOME/.local/share/plasma/plasmoids/$PACKAGE_ID"
 
-if ! kpackagetool6 --type Plasma/Applet --upgrade "$PACKAGE_PATH"; then
-	kpackagetool6 --type Plasma/Applet --remove "$PACKAGE_ID" >/dev/null 2>&1 || true
+run_kpackagetool() {
+	err_file=$(mktemp)
+	if kpackagetool6 "$@" 2>"$err_file"; then
+		exit_code=0
+	else
+		exit_code=$?
+	fi
+
+	grep -F -v 'does not match requested format "Plasma/Applet"' "$err_file" >&2 || true
+	rm -f "$err_file"
+	return "$exit_code"
+}
+
+if ! run_kpackagetool --type Plasma/Applet --upgrade "$PACKAGE_PATH"; then
+	run_kpackagetool --type Plasma/Applet --remove "$PACKAGE_ID" >/dev/null 2>&1 || true
 	rm -rf "$LOCAL_PACKAGE_DIR"
-	kpackagetool6 --type Plasma/Applet --install "$PACKAGE_PATH"
+	run_kpackagetool --type Plasma/Applet --install "$PACKAGE_PATH"
 fi
 
 sh "$SCRIPT_DIR/iconinstall.sh"
