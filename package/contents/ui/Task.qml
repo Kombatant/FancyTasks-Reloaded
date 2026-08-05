@@ -128,7 +128,12 @@ MouseArea {
     readonly property real hoverMaxPanelThicknessExtra: hoverEffectsEnabled && hoverEffectMode === 1 && !inPopup && icon
         ? hoverPanelThicknessExtraForProgress(icon, 1)
         : 0
-    readonly property bool demandsAttention: model.IsDemandingAttention === true || (task.smartLauncherItem && task.smartLauncherItem.urgent)
+    // A launcher-only entry has no window, so an unread notification must not
+    // masquerade as window urgency there — the badge dot alone signals it.
+    // Real urgency (IsDemandingAttention) always originates from a window, so
+    // it stays unconditional and still reaches group parents via their children.
+    readonly property bool demandsAttention: model.IsDemandingAttention === true
+        || (model.IsLauncher !== true && task.smartLauncherItem && task.smartLauncherItem.urgent === true)
     readonly property color attentionHighlightColor: "#ff1f1f"
     readonly property bool iconFrameModeEnabled: !hoverEffectsEnabled || demandsAttention
     readonly property bool iconFrameHovered: !inPopup && containsMouse
