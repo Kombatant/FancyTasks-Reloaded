@@ -90,7 +90,7 @@
         "ServiceTypes": [
             "Plasma/Applet"
         ],
-        "Version": "0.3.2",
+        "Version": "0.3.5",
         "Website": "https://github.com/Kombatant/FancyTasksReloaded"
     },
     "X-Plasma-API": "declarativeappletscript",

@@ -13,6 +13,8 @@ KCM.SimpleKCM {
     property var cfg_showOnlyMinimizedDefault
     property var cfg_unhideOnAttention
     property var cfg_unhideOnAttentionDefault
+    property var cfg_attentionEffect
+    property var cfg_attentionEffectDefault
     property var cfg_groupingStrategy
     property var cfg_groupingStrategyDefault
     property var cfg_iconOnly

@@ -134,17 +134,24 @@ MouseArea {
     // it stays unconditional and still reaches group parents via their children.
     readonly property bool demandsAttention: model.IsDemandingAttention === true
         || (model.IsLauncher !== true && task.smartLauncherItem && task.smartLauncherItem.urgent === true)
+    readonly property int attentionEffect: {
+        const configuredEffect = Number(plasmoid.configuration.attentionEffect);
+        return configuredEffect === 0 || configuredEffect === 2 ? configuredEffect : 1;
+    }
+    readonly property bool attentionPulseEnabled: demandsAttention && attentionEffect === 2
     readonly property color attentionHighlightColor: "#ff1f1f"
-    readonly property bool iconFrameModeEnabled: !hoverEffectsEnabled || demandsAttention
+    readonly property bool iconFrameModeEnabled: !hoverEffectsEnabled || iconFrameAttention
     readonly property bool iconFrameHovered: !inPopup && containsMouse
     readonly property bool iconFrameActive: !inPopup && model.IsActive === true
-    readonly property bool iconFrameAttention: demandsAttention
+    readonly property bool iconFrameAttention: demandsAttention && attentionEffect === 1
     readonly property bool iconFrameVisible: iconFrameModeEnabled && (iconFrameHovered || iconFrameActive || iconFrameAttention)
     readonly property bool showStaticIconFrame: iconFrameModeEnabled && iconFrameVisible
     readonly property color iconFrameAccentColor: iconFrameAttention ? attentionHighlightColor : Kirigami.Theme.highlightColor
     readonly property bool darkPanel: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor)
         === Kirigami.ColorUtils.Dark
-    z: hoverEffectsEnabled ? Math.round((hoverBounceEnabled ? 1 : hoverMagnifyProgress) * 100) : 0
+    z: attentionPulseEnabled
+        ? 100
+        : (hoverEffectsEnabled ? Math.round((hoverBounceEnabled ? 1 : hoverMagnifyProgress) * 100) : 0)
 
     function iconFrameFillColor(alphaScale) {
         const accent = task.iconFrameAccentColor;
@@ -1084,6 +1091,32 @@ MouseArea {
         }
         height: (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)
             - adjustMargin(false, parent.height, taskFrame.margins.bottom))
+
+        SequentialAnimation {
+            id: attentionPulseAnimation
+            running: task.attentionPulseEnabled
+            loops: Animation.Infinite
+
+            NumberAnimation {
+                target: iconBox
+                property: "scale"
+                from: 1
+                to: 1.12
+                duration: 600
+                easing.type: Easing.InOutQuad
+            }
+            NumberAnimation {
+                target: iconBox
+                property: "scale"
+                from: 1.12
+                to: 1
+                duration: 600
+                easing.type: Easing.InOutQuad
+            }
+
+            onStopped: iconBox.scale = 1
+        }
+
         function adjustMargin(vert, size, margin) {
             if (!size) {
                 return margin;
@@ -1314,6 +1347,21 @@ MouseArea {
                     samples: Math.max(13, 1 + (radius * 2))
                     spread: 0.18
                     color: Qt.rgba(task.iconShadowColor.r, task.iconShadowColor.g, task.iconShadowColor.b, Math.min(1, task.iconShadowColor.a * 1.1))
+                    source: iconImage
+                }
+
+                Glow {
+                    anchors.fill: iconImage
+                    visible: task.attentionPulseEnabled && icon.opacity > 0
+                    cached: true
+                    transparentBorder: true
+                    radius: Math.max(10, Math.round(iconImage.height * 0.24))
+                    samples: Math.max(21, 1 + (radius * 2))
+                    spread: 0.24
+                    color: Qt.rgba(task.attentionHighlightColor.r,
+                        task.attentionHighlightColor.g,
+                        task.attentionHighlightColor.b,
+                        0.72)
                     source: iconImage
                 }
 
@@ -1779,7 +1827,7 @@ MouseArea {
         },
         State {
             name: "attention"
-            when: task.demandsAttention
+            when: task.demandsAttention && task.attentionEffect !== 0
 
             PropertyChanges {
                 target: frame

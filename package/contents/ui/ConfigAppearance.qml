@@ -23,6 +23,7 @@ ConfigPage {
     property alias cfg_highlightWindows: highlightWindows.checked
     property bool cfg_indicateAudioStreams
     property alias cfg_notificationBadges: notificationBadges.checked
+    property alias cfg_attentionEffect: attentionEffect.currentIndex
     property alias cfg_iconScale: iconScale.value
     property alias cfg_iconSizePx: iconSizePx.value
     property alias cfg_iconSizeOverride: iconSizeOverride.checked
@@ -137,6 +138,16 @@ Kirigami.FormLayout {
     CheckBox {
         id: minimizedWindowPreview
         text: i18n("Show window preview for minimized windows")
+    }
+
+    ComboBox {
+        id: attentionEffect
+        Kirigami.FormData.label: i18n("Urgent tasks:")
+        model: [
+            i18n("Off"),
+            i18n("Red background"),
+            i18n("Pulse")
+        ]
     }
 
     ComboBox {

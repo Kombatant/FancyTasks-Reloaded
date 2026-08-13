@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FancyTasks Reloaded\n"
 "Report-Msgid-Bugs-To: https://github.com/Kombatant/FancyTasksReloaded\n"
-"POT-Creation-Date: 2026-04-16 21:38-0400\n"
+"POT-Creation-Date: 2026-08-13 08:26-0400\n"
 "PO-Revision-Date: 2023-07-13 22:27+0200\n"
 "Last-Translator: Heimen Stoffels <vistausss@fastmail.com>\n"
 "Language-Team: \n"
@@ -68,6 +68,22 @@ msgid "Show window preview for minimized windows"
 msgstr ""
 
 #: ../contents/ui/ConfigAppearance.qml
+msgid "Urgent tasks:"
+msgstr ""
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Off"
+msgstr ""
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Red background"
+msgstr ""
+
+#: ../contents/ui/ConfigAppearance.qml
+msgid "Pulse"
+msgstr ""
+
+#: ../contents/ui/ConfigAppearance.qml
 msgid "Hover Effects:"
 msgstr ""
 
@@ -85,10 +101,6 @@ msgstr "Vergrootglas"
 
 #: ../contents/ui/ConfigAppearance.qml
 msgid "Icon Shadow type:"
-msgstr ""
-
-#: ../contents/ui/ConfigAppearance.qml
-msgid "Off"
 msgstr ""
 
 #: ../contents/ui/ConfigAppearance.qml
